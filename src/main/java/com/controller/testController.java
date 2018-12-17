@@ -37,4 +37,8 @@ public class testController {
     public String Mytest1(){
         return "test1";
     }
+    @GetMapping("/GIS")
+    public String GIS(){
+        return "GIS";
+    }
 }
