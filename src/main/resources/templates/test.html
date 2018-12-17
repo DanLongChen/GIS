@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>test</title>
+    <style>
+        #view,body,html{
+            padding: 0px;
+            margin: 0px 0px 0px 0px;
+            width:100%;
+            height:100%;
+        }
+        #visible{
+            top: 10px;
+            right: 120px;
+            width: 100px;
+            height:20px;
+            position: absolute;
+            z-index: 99;
+            background-color: white;
+            border-radius: 8px;
+            padding: 10px;
+            opacity: 0.75;
+            font-size: 10px;
+        }
+        #message{
+            width:10px;
+            height:10px;
+            z-index:99;
+            background-color: white;
+            position: absolute;
+        }
+    </style>
+    <!--<link rel="stylesheet" href="http://localhost:8080/4.9/esri/css/main.css">-->
+    <!--<script src="http://localhost:8080/4.9/init.js"></script>-->
+    <!--<script src="http://localhost:8080/4.9/dojo/dojo.js"></script>-->
+    <link rel="stylesheet" href="https://js.arcgis.com/4.9/esri/css/main.css">
+    <script src="https://js.arcgis.com/4.9/"></script>
+
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/SceneView",
+            "esri/WebScene",
+            "esri/WebMap",
+
+            "esri/layers/SceneLayer",
+            "esri/layers/FeatureLayer",
+            "esri/layers/MapImageLayer",//可以加载动态图层
+            "esri/layers/TileLayer",//平铺图层
+
+            "esri/tasks/support/Query",//查询图层
+            "esri/tasks/QueryTask",
+
+            "esri/Graphic",//画点
+            "esri/geometry/Point",
+            "esri/symbols/SimpleMarkerSymbol",
+
+            "esri/geometry/Polyline",//画线
+            "esri/symbols/SimpleLineSymbol",
+
+            "esri/tasks/Locator",
+
+            "esri/widgets/BasemapToggle",//小组件
+            "dojo/domReady!"
+        ],function(Map,SceneView,WebScene,WebMap,SceneLayer,FeatureLayer,MapImageLayer,TileLayer,Query,QueryTask,Graphic,Point,SimpleMarkerSymbol,Polyline,SimpleLineSymbol,Locator,BasemapToggle){
+            //进行图层的查询
+//            var query=new Query({
+//                where:" X likes '%3%'",
+//                outFields:["*"],
+//                returnGeometry:true
+//            });
+//            var queryTask=new QueryTask({
+//                url:"https://services9.arcgis.com/8K0xsogbMB6Bg155/arcgis/rest/services/test/FeatureServer"
+//            });
+//            queryTask.execute(query)
+//                .then(function(result){
+//                console.log(result)
+//            })
+//                .otherwise(function(e){
+//                    console.log(e);
+//                });
+
+            /****
+             * 图层定义
+             * ######################################################################################
+             */
+                //点的样式########################################################################
+            var trailheadsRenderer = {
+                    "type": "simple",
+                    "symbol": {
+                        "type": "picture-marker",
+                        "url": "http://static.arcgis.com/images/Symbols/NPS/npsPictograph_0231b.png",
+                        "width": 20.5,
+                        "height": 20.5
+                    }
+                }
+            /**
+             * 自定义提示框
+             */
+            var trailHeads={
+                "title":"position",
+                "content":"<b>position</b> <br> <b>X:</b>{X} <br> <b>Y</b> {Y} <br> <b>Note</b> {note}"//数据从图层的outFields获取
+            }
+            /**
+             * 上海崇明岛图层
+             */
+            var featureLayer = new FeatureLayer("https://services9.arcgis.com/8K0xsogbMB6Bg155/arcgis/rest/services/test/FeatureServer",{
+                mode: FeatureLayer.MODE_SNAPSHOT,
+                outFields: ["X","Y","note"],//输出给提示框的内容
+                renderer:trailheadsRenderer,
+                popupTemplate:trailHeads
+            });
+
+            /**
+             * 美洲海岸图层
+             */
+            var featureLayerOcean=new FeatureLayer({//人工珊瑚礁
+                url:"https://services.arcgis.com/nGt4QxSblgDfeJn9/arcgis/rest/services/South_Florida_Data/FeatureServer/0",
+                // mode: FeatureLayer.MODE_SNAPSHOT
+            });
+            var featureLayerOcean1=new FeatureLayer({//水深轮廓
+                url:"https://services.arcgis.com/nGt4QxSblgDfeJn9/arcgis/rest/services/South_Florida_Data/FeatureServer/1"
+            });
+            var featureLayerOcean2=new FeatureLayer({//海洋表面
+                url:"https://services.arcgis.com/nGt4QxSblgDfeJn9/arcgis/rest/services/South_Florida_Data/FeatureServer/2"
+            });
+            var featureLayerOcean3=new FeatureLayer({//珊瑚礁和殖民地
+                url:"https://services.arcgis.com/nGt4QxSblgDfeJn9/arcgis/rest/services/South_Florida_Data/FeatureServer/3"
+            });
+            var featureLayerOcean4=new FeatureLayer({//沉积物
+                url:"https://services.arcgis.com/nGt4QxSblgDfeJn9/arcgis/rest/services/South_Florida_Data/FeatureServer/4"
+            });
+            var featureLayerOcean5=new FeatureLayer({//其他
+                url:"https://services.arcgis.com/nGt4QxSblgDfeJn9/arcgis/rest/services/South_Florida_Data/FeatureServer/5"
+            });
+
+            /***
+             * 海岸线图层
+             * tileLayer用于创建二维图层
+             */
+            var tileLayer=new TileLayer({
+                url:"https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/3",
+                opacity: 0.7,  //定义透明度
+                id:"HA",//定义图层的id
+                visible:true//定义是否可见
+            });
+            var tileLayer1=new TileLayer({
+                url:"https://tiles.arcgis.com/tiles/bDAhvQYMG4WL8O5o/arcgis/rest/services/PBC_Bathy_Drape_Tiles4/MapServer/1",
+                opacity:0.6,
+                visible:false
+            });
+            var mapImageLayer=new MapImageLayer({//可以有子层
+               url:"https://tiles.arcgis.com/tiles/bDAhvQYMG4WL8O5o/arcgis/rest/services/PBC_Bathy_Drape_Tiles4/MapServer/1"
+            });
+            /**
+             * 3D场景图
+             */
+            var sceneLayer=new SceneLayer({
+                url:"https://services.arcgis.com/nGt4QxSblgDfeJn9/arcgis/rest/services/South_Florida_Data/FeatureServer"
+            });
+
+
+
+            //地图和场景定义
+            var map=new Map({
+                basemap:"oceans",
+                ground:"world-elevation", //这个是给3D图用的
+                layers:[tileLayer]//可以直接加入tileLayer（2D图层）
+            });
+//            var map = new WebMap({
+//                portalItem: {
+//                    id: "11fecfcd41384cebaf66a1c876193e9c"
+//                },
+//                ground:"world-elevation"
+//            });
+            var view=new SceneView({
+                map:map,
+//                scale:5000,//设置比例尺
+                container:"view",
+//                center:[121.9869518280,31.5195079847],//上海
+                center:[-80.046,26.733],//美洲
+                zoom:12,//放大级别
+                elevationInfo: {//海拔信息
+                    mode: "absolute-height",
+                    offset: 6
+                },
+                padding:{
+                    right:0//整个地图会移动
+                },
+                camera: {
+                    position: [-80.046,26.733, 70],//经纬度，高度(以m为单位的海拔)
+                    tilt: 70,//倾斜角度
+                    heading: 304
+                },
+                environment: {//指定环境
+                    background: {
+                        type: "color",
+                        color: [1, 1, 4, 1]//背景颜色
+                    },
+                    lighting:{
+                        directShadowsEnabled:true,//是否显示由太阳照射的阴影
+                        ambientOcclusionEnabled:true,//是否显示环境遮挡着色
+                        cameraTrackingEnabled:true//相机更改的时候是否执行更新当前的时间
+                    },
+                    starsEnabled: true,//是否显示星系
+                    atmosphereEnabled: true//大气层可视化
+                },
+                atmosphere:{//场景气氛
+                    quility:"high",
+                    startsEnable:true
+                },
+                highlightOptions:{
+                    color:[0,255,255],
+                    fillOpacity:0.6
+                }
+            });
+
+            //#######################小型插件定义#####################################################
+            var toggle=new BasemapToggle({
+                view:view,//当前视图
+                nextBaseMap:tileLayer//切换的下一个地图
+            });
+
+
+            view.ui.add("line-button","top-middle");
+            view.ui.add(toggle,"top-right");
+
+
+
+            /***
+             * 定义弹出框
+             */
+//            var locatorTask = new Locator({
+//                url: "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer"
+//            });
+            view.popup.autoOpenEnabled = true;
+
+
+            map.add(featureLayer);
+            map.add(tileLayer1);
+            // map.add(tileLayer);
+            map.add(mapImageLayer);
+
+            map.add(featureLayerOcean);
+            map.add(featureLayerOcean1);
+            // map.add(featureLayerOcean2);
+            // map.add(featureLayerOcean3);
+            // map.add(featureLayerOcean4);
+            // map.add(featureLayerOcean5);
+            map.add(sceneLayer);
+
+            /***
+             * 数据和事件定义
+             */
+            console.log(view.graphics);
+            var position=[0,1,2,3,4,5,6,9,8,9,10];
+            position[0]=[31.52,121.08];//纬度，经度
+            position[1]=[31.53,121.18];
+            position[2]=[31.6,121.28];
+            position[3]=[31.71,121.38];
+            position[4]=[31.81,121.58];
+            position[5]=[31.54,121.58];
+            position[6]=[31.55,121.78];
+            position[7]=[31.56,121.88];
+            position[8]=[31.51,121.98];
+            position[9]=[31.52,121.08];
+
+            var positionOcean=[0,1,2,3,4,5,6,9,8,9,10];
+            positionOcean[0]=[-80.03,26.76];
+            positionOcean[1]=[-80.03,26.77];
+            positionOcean[2]=[-80.07,26.33];
+            positionOcean[3]=[-80.06,26.43];
+            positionOcean[4]=[-80.04,26.53];
+            positionOcean[5]=[-80.02,26.69];
+            positionOcean[6]=[-80.03,26.73];
+            positionOcean[7]=[-80.05,26.89];
+            positionOcean[8]=[-80.05,26.91];
+            positionOcean[9]=[-80.06,26.94];
+            positionOcean[10]=[-80.04,26.77];
+
+            var message=document.getElementById("message");
+            view.on("click",function(event){
+                var lon=Math.round(event.mapPoint.longitude*1000)/1000;
+                var lat=Math.round(event.mapPoint.latitude*1000)/1000;
+                console.log(lon);
+                view.popup.open({
+                    title:"now at ["+lon+","+lat+"]",
+                    location:event.mapPoint
+                });
+                var oEvent = event;
+                message.left = (oEvent.clientX + 10) + "px";
+                message.top = (oEvent.clientY + 5) + "px";
+                message.innerHTML = "经度："+lat+ ",纬度：" +lon;
+            });
+//            locatorTask.locationToAddress(event.mapPoint).then(function(response){
+//                view.popup.content = response.address;
+//            }).error(function () {
+//                view.popup.content="地点没找到";
+//            });
+
+            view.on("layerview-create",function(event){
+                if(event.layer.id==='HA'){
+                    console.log(event.layerView);
+                }
+            });
+            //是否显示海岸线
+            var checkVisible=document.getElementById("canVisible");
+            checkVisible.addEventListener("change",function(){
+                tileLayer1.visible=checkVisible.checked;
+            });
+
+            function events(){
+                view.on("key-down",function(event){
+                if(event.key=='1'){
+                    map.add(featureLayerOcean);
+                }
+                if(event.key=='2'){
+                    map.add(featureLayerOcean1);
+                }
+                if(event.key=='3'){
+                    map.add(cjwFeatureLayerOcean);
+                }
+                if(event.key=='4'){
+                    map.add(tileLayer);
+                }
+                if(event.key=='5'){
+                    map.add(tileLayer1);
+                }
+                if(event.key=='6'){
+                    map.add(sceneLayer);
+                }
+                if(event.key=='w'){
+                    var polyline = new Polyline({
+                        paths: [
+                            position[0],
+                            position[1]
+                        ]
+                    });
+                    console.log(polyline);
+
+                    // Create a symbol for drawing the line
+                    var lineSymbol = new SimpleLineSymbol({
+                        color: [226, 119, 40],
+                        width: 10
+                    });
+
+                    // Create a line graphic
+                    var polylineGraphic = new Graphic({
+                        geometry: polyline,
+                        symbol: lineSymbol
+                    })
+
+                    // Add the graphic to the view
+                    view.graphics.add(polylineGraphic);
+                    for(var i=0;i<position.length-1;i++){
+                        var polyline = new Polyline({
+                            paths: [
+                                position[i],
+                                position[i+1]
+                            ]
+                        });
+                        console.log(polyline);
+
+                        // Create a symbol for drawing the line
+                        var lineSymbol = new SimpleLineSymbol({
+                            color: [226, 119, 40],
+                            width: 10
+                        });
+
+                        // Create a line graphic
+                        var polylineGraphic = new Graphic({
+                            geometry: polyline,
+                            symbol: lineSymbol
+                        })
+
+                        // Add the graphic to the view
+                        view.graphics.add(polylineGraphic);
+                        console.log("do it");
+                    }
+//                    position.forEach(function (value) {
+//                        setTimeout(function(){
+//                            var point=new Point();
+//                            var markerSymbol = new SimpleMarkerSymbol({
+//                                color: [226, 119, 40],
+//                                outline: {
+//                                    color: [255, 255, 255],
+//                                    width: 1
+//                                }
+//                            });
+//                            var pointGraphic = new Graphic();
+//                            point.longitude=value[1];
+//                            point.latitude=value[0];
+//
+//                            pointGraphic.geometry=point;
+//                            pointGraphic.symbol=markerSymbol;
+//
+//                            view.graphics.add(pointGraphic);
+//
+//                            view.goTo({
+//                                target:pointGraphic
+//                            });
+//                        },1000);
+
+
+//                    });
+                }
+                if(event.key==='d'){
+                    var options = {
+                        speedFactor: 0.3, //与正常情况下相比的速度
+                        easing: "out-quint"//到达时会有一个减速动作
+                    };
+                    var i=0;
+                    var timer=window.setInterval(move,4000);
+                    function move(){
+                        var tempPosition=positionOcean[i];
+
+                        var point=new Point();
+                        point.longitude=tempPosition[0];
+                        point.latitude=tempPosition[1];
+
+                        var symbol=new SimpleMarkerSymbol({
+                            color:[226,119,40],
+                            outline:{
+                                color:[255,255,255],
+                                width:3
+                            }
+                        });
+
+                        var pointGraphic=new Graphic();
+                        pointGraphic.geometry=point;
+                        pointGraphic.symbol=symbol;
+                        view.graphics.add(pointGraphic);
+                        view.goTo({
+                            target:pointGraphic,
+                            zoom:12
+                        },options);
+                        i++;
+                        if(i===positionOcean.length){
+                           window.clearInterval(timer);
+                        }
+                    }
+                }
+                if(event.key=='a') {
+                    var options = {
+                        speedFactor: 0.1, //与正常情况下相比的速度
+                        easing: "out-quint"//到达时会有一个减速动作
+                    };
+                    view.goTo({
+                       target:[121.08,31.52],
+                        zoom:10
+                    });
+                    setTimeout(10000);
+                    if(view.center.longitude!==121.08 && view.center.latitude!==31.52){
+                        setTimeout(20000);
+                        console.log(view.center);
+                    }
+                    var timer=window.setInterval(move,3000);
+                    var i=0;
+                    var highLight=null;
+                    function move () {
+
+                        var value=position[i];
+                        var point = new Point();
+                        var markerSymbol = new SimpleMarkerSymbol({
+                            color: [226, 119, 40],
+                            outline: {
+                                color: [255, 255, 255],
+                                width: 1
+                            }
+                        });
+                        var pointGraphic = new Graphic();
+                        point.longitude = value[1];
+                        point.latitude = value[0];
+
+                        pointGraphic.geometry = point;
+                        pointGraphic.symbol = markerSymbol;
+
+                        view.goTo({
+                            target: pointGraphic
+                            // zoom:11
+                        });
+                        setTimeout(function () {
+                            view.goTo({
+                                target: pointGraphic
+                                // zoom:11
+                            },options);
+                        },3000);
+                        i++;
+                        if(i===position.length){
+                            i=0;
+//                            window.clearTimeout(timer);
+                        }
+                    };
+
+                }
+
+            });
+            };
+            events();
+
+        });
+    </script>
+</head>
+<body>
+<div id="view">
+    <div id="line-button" class="esri-widget esri-widget--button esri-interactive" title="画线">
+        <span class="esri-icon-polyline"></span>
+    </div>
+    <div id="area-button" class="esri-widget esri-widget--button esri-interactive" title="画面">
+        <span class="esri-icon-polygon"></span>
+    </div>
+    <div id="point-button" class="esri-widget esri-widget--button esri-interactive" title="画点">
+        <span class="esri-icon-radio-checked"></span>
+    </div>
+    <div id="circle-button" class="esri-widget esri-widget--button esri-interactive" title="画圆">
+        <span class="esri-icon-radio-unchecked"></span>
+    </div>
+    <div id="rectangle-button" class="esri-widget esri-widget--button esri-interactive" title="画矩形">
+        <span class="esri-icon-checkbox-unchecked"></span>
+    </div>
+</div>
+<span id="visible">
+    <input type="checkbox" id="canVisible"/>海岸线可见性
+</span>
+<span id="message"></span>
+</body>
+</html>

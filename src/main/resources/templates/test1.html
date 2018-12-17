@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+    <title>Create Map and add a dynamic layer</title>
+    <style>
+        html, body, #map {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.9/esri/css/main.css">
+    <script src="https://js.arcgis.com/4.9/"></script>
+
+
+    <script>
+        require([
+                "esri/Map",
+                "esri/layers/FeatureLayer",
+                "esri/layers/LabelClass",
+                "dojo/_base/Color",
+                "esri/symbols/Font",
+                "esri/symbols/TextSymbol",
+                "dojo/domReady!"
+            ],
+            function(
+                Map,
+                FeatureLayer,
+                LabelClass,Color,Font,TextSymbol
+            ) {
+
+                var map = new Map("map",{
+                    showLabels : true
+                });
+
+                /****************************************************************
+                 * Add feature layer - A FeatureLayer at minimum should point
+                 * to a URL to a feature service or point to a feature collection
+                 * object.
+                 ***************************************************************/
+
+                    // Carbon storage of trees in Warren Wilson College.
+                var featureLayer = new FeatureLayer("https://services9.arcgis.com/8K0xsogbMB6Bg155/arcgis/rest/services/trailheads/FeatureServer",{
+                        mode: FeatureLayer.MODE_SNAPSHOT,
+                        outFields: ["*"]
+                    });
+
+                //地名标注
+                var labelSymbol = new TextSymbol().setColor(new Color("#000000"));
+                labelSymbol.font.setSize("10pt");
+                labelSymbol.font.setFamily("新宋体");
+                var json = {
+                    "labelExpressionInfo": {"value": "{Point}"},
+                    "useCodedValues": false,
+                    "labelPlacement":"center-right"
+                };
+                var labelClass = new LabelClass(json);
+                labelClass.symbol = labelSymbol;
+                featureLayer.setLabelingInfo([ labelClass ]);
+                map.addLayer(featureLayer);
+                //添加“update-end”事件
+                map.on("update-end", function(){
+                    // update-end event will execute after the layer has been added to the map
+                    if(featureLayer.graphics.length >= 1)
+                    {
+                        // do your thing
+                        console.log(featureLayer.graphics);
+                        var point=featureLayer.graphics[0].attributes.Point;
+                        var num=featureLayer.graphics[0].attributes.NUM;
+
+                        console.log("Point:"+point+"    NUM:"+num);
+                    }
+                });
+            });
+    </script>
+</head>
+
+<body>
+<p id="map"></p>
+</body>
+
+</html>

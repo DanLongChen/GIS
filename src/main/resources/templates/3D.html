@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>3D map-test</title>
+    <style>
+        <!--定义这几个标签的样式-->
+        html, body, #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+    <!--模块导入-->
+    <link rel="stylesheet" href="https://js.arcgis.com/4.9/esri/css/main.css">
+    <script src="https://js.arcgis.com/4.9/"></script>
+    <script>
+        //引入具体模块
+        require([
+            "esri/Map","esri/views/SceneView"
+        ],function(Map,SceneView){
+            var map=new Map({
+                basemap:"oceans",
+                ground:"world-elevation"
+            });
+            var view=new SceneView({
+                container:"viewDiv",
+                map:map,
+                scale:500000,
+                //zoom:4,根据细节级别，设置缩放级别
+                center:[-101.17, 21.78]
+            });
+        });
+//        require([
+//            "esri/Map",
+//            "esri/views/SceneView"
+//        ], function(Map, SceneView){
+//            var map = new Map({
+//                basemap: "hybrid",
+//                ground: "world-elevation"
+//            });
+//            var view = new SceneView({
+//                container: "viewDiv",     // Reference to the scene div created in step 5
+//                map: map,                 // Reference to the map object created before the scene
+//                scale: 500,          // Sets the initial scale to 1:50,000,000
+//                center: [-101.17, 21.78]  // Sets the center point of view with lon/lat
+//            });
+//        });
+    </script>
+</head>
+<body>
+<div id="viewDiv"></div>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>Intro to SceneLayer - 4.9</title>
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.9/esri/css/main.css">
+    <script src="https://js.arcgis.com/4.9/"></script>
+
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/SceneView",
+            "esri/layers/SceneLayer",
+        ], function(Map,SceneView, SceneLayer) {
+
+            // Create Map
+            var map = new Map({
+                basemap: "oceans",
+                ground: "world-elevation"
+            });
+
+            var x=-118.73890777118505;
+            var y=34.033441877663826;
+            var line=[0,1,2];
+            line[0]=[-74.0338,40.6913];
+            line[1]=[-74.0138,40.2913];
+            line[2]=[-74.0038,40.2713];
+            // Create the SceneView
+            var view = new SceneView({
+                container: "viewDiv",
+                map: map,
+                camera: {
+                    position: [x, y, 707],
+                    tilt: 82,
+                    heading: 304
+                },
+                center:[x, y],
+                qualityProfile: "high"
+            });
+
+            // Create SceneLayer and add to the map
+            var sceneLayer = new SceneLayer({
+                portalItem: {
+                    id: "7f4636a322764847af2975ef29dbc9e0"
+                },
+                elevationInfo: {
+                    mode: "absolute-height",
+                    offset: 6
+                }
+            });
+            map.add(sceneLayer);
+
+            // Create MeshSymbol3D for symbolizing SceneLayer
+            var symbol = {
+                type: "mesh-3d", // autocasts as new MeshSymbol3D()
+                symbolLayers: [{
+                    type: "fill", // autocasts as new FillSymbol3DLayer()
+                    // If the value of material is not assigned, the default color will be grey
+                    material: {
+                        color: [244, 247, 134]
+                    }
+                }]
+            };
+            // Add the renderer to sceneLayer
+            sceneLayer.renderer = {
+                type: "simple", // autocasts as new SimpleRenderer()
+                symbol: symbol
+            };
+
+
+            var camera={
+                position: [-74.0338, 40.6913, 600],
+                tilt: 82,
+                heading: 304
+            };
+
+            view.on("key-down",function (event) {
+                if(event.key=='w'){
+                    setTimeout(
+                        function(){
+                            line.forEach(
+                                function(value){
+                                    view.goTo({
+                                    center:value,
+                                    heading: 180,
+                                    tilt: 40
+                                    });
+                            }
+                        );
+                    },2000);
+                }
+                if(event.key=='a'){
+                    x=-74.0338;
+                    y=40.6913;
+                    view.goTo({
+                        target:[-74.0338, 40.6913],
+                        heading: 180,
+                        tilt: 40
+                    });
+                }
+            });
+
+        });
+    </script>
+</head>
+
+<body>
+<div id="viewDiv"></div>
+</body>
+</html>
