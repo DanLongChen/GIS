@@ -17,6 +17,28 @@
             height: 100%;
             z-index: 99;
         }
+        /*#overviewDiv{*/
+            /*margin-top: -220px;*/
+            /*margin-left: 70%;*/
+            /*position: absolute;*/
+            /*width:400px;*/
+            /*height:200px;*/
+        /*}*/
+        #overviewDiv {
+            position: absolute;
+            bottom: 20px;
+            right: 40px;
+            width: 300px;
+            height: 200px;
+            border: 1px solid black;
+            z-index: 1;
+            overflow: hidden;
+        }
+        #extentDiv {
+            background-color: rgba(0, 0, 0, 0.5);
+            position: absolute;
+            z-index: 2;
+        }
 
         /*#visible{*/
             /*z-index: 99;*/
@@ -92,8 +114,16 @@
             "esri/widgets/BasemapGallery",
             "esri/widgets/Search",
             "esri/widgets/LayerList",
+
+
+            "esri/core/watchUtils",
+            "dojo/dom",
+            "dojo/promise/all",
             "dojo/domReady!"
-        ],function(Map,SceneView,WebScene,WebMap,MapView,SceneLayer,FeatureLayer,MapImageLayer,TileLayer,Query,QueryTask,Graphic,Point,SimpleMarkerSymbol,Polyline,SimpleLineSymbol,Locator,BasemapToggle,CoordinateConversion,Expand,BasemapGallery,Search,LayerList){
+        ],function(Map,SceneView,WebScene,WebMap,MapView,SceneLayer,FeatureLayer,MapImageLayer,TileLayer,
+                   Query,QueryTask,Graphic,Point,SimpleMarkerSymbol,Polyline,SimpleLineSymbol,Locator,
+                   BasemapToggle,CoordinateConversion,Expand,BasemapGallery,Search,LayerList,
+                   watchUtils,dom,all){
             //进行图层的查询
 //            var query=new Query({
 //                where:" X likes '%3%'",
@@ -198,15 +228,9 @@
                 ground:"world-elevation"//这个是给3D图用的
                 // layers:[tileLayer]//可以直接加入tileLayer（2D图层）
             });
-//            var map = new WebMap({
-//                portalItem: {
-//                    id: "11fecfcd41384cebaf66a1c876193e9c"
-//                },
-//                ground:"world-elevation"
-//            });
             var view=new SceneView({
                 map:map,
-               scale:5000,//设置比例尺
+                scale:5000,//设置比例尺
                 container:"view",
 //                center:[121.9869518280,31.5195079847],//上海
                 center:[-80.046,26.733],//美洲
@@ -253,6 +277,56 @@
                     }
                 }
             });
+
+            var mapView = new SceneView({
+                container: "overviewDiv",
+                map: map,
+                constraints: {
+                    rotationEnabled: false
+                }
+            });
+            mapView.ui.components = [];
+            var extentDiv = document.getElementById("extentDiv");
+            mapView.when(function() {
+                // Update the overview extent whenever the MapView or SceneView extent changes
+                view.watch("extent", updateOverviewExtent);
+                view.watch("extent", updateOverviewExtent);
+
+                // Update the minimap overview when the main view becomes stationary
+                watchUtils.when(view, ["stationary","extent"], updateOverview);
+
+                function updateOverview() {
+                    // Animate the MapView to a zoomed-out scale so we get a nice overview.
+                    // We use the "progress" callback of the goTo promise to update
+                    // the overview extent while animating
+                    mapView.goTo({
+                        center: view.center,
+                        scale: view.scale * 2 * Math.max(view.width /mapView.width, view.height/mapView.height)
+                    });
+                }
+
+                function updateOverviewExtent() {
+                    // Update the overview extent by converting the SceneView extent to the
+                    // MapView screen coordinates and updating the extentDiv position.
+                    var extent = view.extent;
+
+                    var bottomLeft = mapView.toScreen(extent.xmin, extent.ymin);
+                    var topRight = mapView.toScreen(extent.xmax, extent.ymax);
+
+                    extentDiv.style.top = topRight.y + "px";
+                    extentDiv.style.left = bottomLeft.x + "px";
+
+                    extentDiv.style.height = (bottomLeft.y - topRight.y) + "px";
+                    extentDiv.style.width = (topRight.x - bottomLeft.x) + "px";
+                }
+            });
+//            var map = new WebMap({
+//                portalItem: {
+//                    id: "11fecfcd41384cebaf66a1c876193e9c"
+//                },
+//                ground:"world-elevation"
+//            });
+
 
             //#######################小型插件定义#####################################################
             var toggle=new BasemapToggle({
@@ -302,7 +376,7 @@
             });
 
             view.ui.add(ccWidget, "bottom-left");//添加比例尺
-            // view.ui.add(search, "top-right");//搜索框
+            view.ui.add(search, "top-right");//搜索框
             view.ui.add(bgExpand, "top-left");
             view.ui.add(layerExpand, "top-left");
             view.ui.add(toggle,"top-left");//当前视图，下一个视图
@@ -623,12 +697,12 @@
                         </ul>
                     </li>
                 </ul>
-                <form class="navbar-form navbar-right" th:action="${'#'}" th:method="${'post'}">
-                    <div class="form-group">
-                        <input type="text" class="form-control" placeholder="输入经纬度，隔开">
-                    </div>
-                    <button type="submit" class="btn btn-default">查找</button>
-                </form>
+                <!--<form class="navbar-form navbar-right" th:action="${'#'}" th:method="${'post'}">-->
+                    <!--<div class="form-group">-->
+                        <!--<input type="text" class="form-control" placeholder="输入经纬度，隔开">-->
+                    <!--</div>-->
+                    <!--<button type="submit" class="btn btn-default">查找</button>-->
+                <!--</form>-->
             </div>
         </div>
     </nav>
@@ -671,6 +745,9 @@
             <span class="esri-icon-checkbox-unchecked"></span>
         </div>
         <div id="message" style="width:160px;font-size: 10px; color: #000000;position:absolute; left:50%; bottom:16px;z-index: 50;"></div>
+    </div>
+    <div id="overviewDiv">
+        <div id="extentDiv"></div>
     </div>
 </body>
 </html>
