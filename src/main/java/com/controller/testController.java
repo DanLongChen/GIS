@@ -41,4 +41,8 @@ public class testController {
     public String GIS(){
         return "GIS";
     }
+    @GetMapping("ck")
+    public String ck(){
+        return "ck";
+    }
 }

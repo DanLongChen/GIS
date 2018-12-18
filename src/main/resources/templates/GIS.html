@@ -4,12 +4,20 @@
     <meta charset="UTF-8">
     <title>GIS</title>
     <style>
-        #view,body,html{
+        body,html{
             padding: 0px;
             margin: 0px 0px 0px 0px;
             width:100%;
-            height:95%;
+            height:100%;
         }
+        #view{
+            margin-top: 0px;
+            padding-top: 50px;
+            width: 100%;
+            height: 100%;
+            z-index: 99;
+        }
+
         /*#visible{*/
             /*z-index: 99;*/
             /*border-radius: 8px;*/
@@ -17,6 +25,22 @@
             /*opacity: 0.75;*/
             /*font-size: 10px;*/
         /*}*/
+        .mapView {
+            height: 400px;
+            border: 1px solid #A8A8A8;
+        }
+
+        .esri-popup.esri-widget {
+            max-height: 100%;
+        }
+
+        .esri-view-width-xlarge .esri-popup__main-container {
+            width: 180px;
+        }
+
+        .esri-view-height-less-than-medium .esri-popup__main-container {
+            max-height: 300px;
+        }
         #message{
             width:10px;
             height:10px;
@@ -31,17 +55,19 @@
 
     <script th:src="@{/webjars/jquery/1.11.1/jquery.js}"></script>
     <script src="/webjars/bootstrap/4.0.0/js/bootstrap.js" th:src="@{/webjars/bootstrap/3.3.7/js/bootstrap.js}"></script>
-    <script src="https://js.arcgis.com/4.9/"></script>
+    <script src="https://js.arcgis.com/4.10/"></script>
 
-    <link rel="stylesheet" href="https://js.arcgis.com/4.9/esri/css/main.css">
+    <link rel="stylesheet" href="https://js.arcgis.com/4.10/esri/css/main.css">
     <link rel="stylesheet" href="/webjars/bootstrap/4.0.0/css/bootstrap.css" th:href="@{/webjars/bootstrap/3.3.7/css/bootstrap.css}">
 
     <script>
         require([
             "esri/Map",
             "esri/views/SceneView",
+            "esri/views/MapView",
             "esri/WebScene",
             "esri/WebMap",
+            // "esri/dijit/OverviewMap",
 
             "esri/layers/SceneLayer",
             "esri/layers/FeatureLayer",
@@ -61,8 +87,13 @@
             "esri/tasks/Locator",
 
             "esri/widgets/BasemapToggle",//小组件
+            "esri/widgets/CoordinateConversion",
+            "esri/widgets/Expand",
+            "esri/widgets/BasemapGallery",
+            "esri/widgets/Search",
+            "esri/widgets/LayerList",
             "dojo/domReady!"
-        ],function(Map,SceneView,WebScene,WebMap,SceneLayer,FeatureLayer,MapImageLayer,TileLayer,Query,QueryTask,Graphic,Point,SimpleMarkerSymbol,Polyline,SimpleLineSymbol,Locator,BasemapToggle){
+        ],function(Map,SceneView,WebScene,WebMap,MapView,SceneLayer,FeatureLayer,MapImageLayer,TileLayer,Query,QueryTask,Graphic,Point,SimpleMarkerSymbol,Polyline,SimpleLineSymbol,Locator,BasemapToggle,CoordinateConversion,Expand,BasemapGallery,Search,LayerList){
             //进行图层的查询
 //            var query=new Query({
 //                where:" X likes '%3%'",
@@ -164,8 +195,8 @@
             //地图和场景定义
             var map=new Map({
                 basemap:"oceans",
-                ground:"world-elevation", //这个是给3D图用的
-                layers:[tileLayer]//可以直接加入tileLayer（2D图层）
+                ground:"world-elevation"//这个是给3D图用的
+                // layers:[tileLayer]//可以直接加入tileLayer（2D图层）
             });
 //            var map = new WebMap({
 //                portalItem: {
@@ -175,7 +206,7 @@
 //            });
             var view=new SceneView({
                 map:map,
-//                scale:5000,//设置比例尺
+               scale:5000,//设置比例尺
                 container:"view",
 //                center:[121.9869518280,31.5195079847],//上海
                 center:[-80.046,26.733],//美洲
@@ -212,6 +243,14 @@
                 highlightOptions:{
                     color:[0,255,255],
                     fillOpacity:0.6
+                },
+                popup: {
+                    actions: [],
+                    dockEnabled: true,
+                    dockOptions: {
+                        buttonEnabled: true,
+                        breakpoint: false
+                    }
                 }
             });
 
@@ -220,10 +259,54 @@
                 view:view,//当前视图
                 nextBaseMap:tileLayer//切换的下一个地图
             });
+            // var overViewMap=new OverviewMap({
+            //     map: map, // 必要的
+            //     visible: true,    // 初始化可见，默认为false
+            //     attachTo: "bottom-right", // 默认右上角
+            //     width: 310,   // 默认值是地图高度的 1/4th
+            //     height: 150, // 默认值是地图高度的 1/4th
+            //     opacity: 0.4,  // 透明度 默认0.5
+            //     maximizeButton: true, // 最大化,最小化按钮，默认false
+            //     expandFactor: 0.4,    //概览地图和总览图上显示的程度矩形的大小之间的比例。默认值是2，这意味着概览地图将至少是两倍的大小的程度矩形。
+            //     color: "red"  // 默认
+            // });
+            // overViewMap.startup();
+            var ccWidget = new CoordinateConversion({
+                view: view
+            });
+            var basemapGallery = new BasemapGallery({
+                view: view,
+                container: document.createElement("div")
+            });
+            var bgExpand = new Expand({
+                view: view,
+                content: basemapGallery
+            });
 
+            // close the expand whenever a basemap is selected
+            basemapGallery.watch("activeBasemap", function() {
+                var mobileSize = view.heightBreakpoint === "xsmall" || view.widthBreakpoint === "xsmall";
+                if (mobileSize) {
+                    bgExpand.collapse();
+                }
+            });
+            var search = new Search({
+                view: view
+            });
+            var layerList = new LayerList({//图层列表
+                view: view
+            });
+            var layerExpand=new Expand({
+               view:view,
+               content:layerList
+            });
 
-            view.ui.add("line-button","top-middle");
-            view.ui.add(toggle,"top-right");
+            view.ui.add(ccWidget, "bottom-left");//添加比例尺
+            // view.ui.add(search, "top-right");//搜索框
+            view.ui.add(bgExpand, "top-left");
+            view.ui.add(layerExpand, "top-left");
+            view.ui.add(toggle,"top-left");//当前视图，下一个视图
+            // view.ui.add("line-button","top-middle");
 
 
 
@@ -233,20 +316,20 @@
 //            var locatorTask = new Locator({
 //                url: "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer"
 //            });
-            view.popup.autoOpenEnabled = true;
+
 
 
             map.add(featureLayer);
             map.add(tileLayer1);
-            // map.add(tileLayer);
+            map.add(tileLayer);
             map.add(mapImageLayer);
 
             map.add(featureLayerOcean);
             map.add(featureLayerOcean1);
-            // map.add(featureLayerOcean2);
-            // map.add(featureLayerOcean3);
-            // map.add(featureLayerOcean4);
-            // map.add(featureLayerOcean5);
+            map.add(featureLayerOcean2);
+            map.add(featureLayerOcean3);
+            map.add(featureLayerOcean4);
+            map.add(featureLayerOcean5);
             map.add(sceneLayer);
 
             /***
@@ -278,25 +361,65 @@
             positionOcean[9]=[-80.06,26.94];
             positionOcean[10]=[-80.04,26.77];
 
-            var message=document.getElementById("message");
-            view.on("click",function(event){
-                var lon=Math.round(event.mapPoint.longitude*1000)/1000;
-                var lat=Math.round(event.mapPoint.latitude*1000)/1000;
-                console.log(lon);
-                view.popup.open({
-                    title:"now at ["+lon+","+lat+"]",
-                    location:event.mapPoint
+
+            view.when(function () {
+                view.popup.autoOpenEnabled = false;
+                console.log(view.popup);
+                view.on("click",function(event){
+                    if (event && event.mapPoint){
+                        var message=document.getElementById("message");
+                        console.log("do it");
+                        var lon=Math.round(event.mapPoint.longitude*1000)/1000;
+                        var lat=Math.round(event.mapPoint.latitude*1000)/1000;
+                        var hei=Math.round(event.mapPoint.height*1000)/1000;
+
+                        view.popup.open({
+                            title: "所在位置: [" + lon + ", " + lat + ","+hei+"]",
+                            location: event.mapPoint,// Set the location of the popup to the clicked location
+                            content: setContentInfo(
+                                view.center,
+                                view.scale
+                            )
+                        });
+                        console.log(lon);
+                        message.innerHTML = "经度："+lat+ ",维度：" +lon;
+                    }else {
+                        view.popup.open({
+                            // Set the popup's title to the coordinates of the location
+                            title: "Invalid point location",
+                            location: event.mapPoint, // Set the location of the popup to the clicked location
+                            content: "Please click on a valid location."
+                        });
+                    }
+                    function setContentInfo(center, scale) {
+                        var popupDiv = document.createElement("div");
+                        popupDiv.classList.add("mapView");
+
+                        var popupView = new SceneView({
+                            container: popupDiv,
+                            // map: new Map({
+                            //     basemap: "oceans"
+                            // }),
+                            map:map,
+                            center: center,
+                            camera:view.camera,
+                            scale: scale * 1000 * Math.max(view.width / 100, view.height / 100),
+                            constraints: {
+                                rotationEnabled: false
+                            },
+                            ui: {
+                                components: []
+                            }
+                        });
+                        // Return a dom node
+                        console.log(popupView.container);
+                        return popupView.container;
+                    }
                 });
-                var oEvent = event;
-                message.left = (oEvent.clientX + 10) + "px";
-                message.top = (oEvent.clientY + 5) + "px";
-                message.innerHTML = "经度："+lat+ ",纬度：" +lon;
+
             });
-//            locatorTask.locationToAddress(event.mapPoint).then(function(response){
-//                view.popup.content = response.address;
-//            }).error(function () {
-//                view.popup.content="地点没找到";
-//            });
+
+
 
             view.on("layerview-create",function(event){
                 if(event.layer.id==='HA'){
@@ -304,10 +427,10 @@
                 }
             });
             //是否显示海岸线
-            var checkVisible=document.getElementById("canVisible");
-            checkVisible.addEventListener("change",function(){
-                tileLayer1.visible=checkVisible.checked;
-            });
+            // var checkVisible=document.getElementById("canVisible");
+            // checkVisible.addEventListener("change",function(){
+            //     tileLayer1.visible=checkVisible.checked;
+            // });
 
             function events(){
                 view.on("key-down",function(event){
@@ -377,32 +500,6 @@
                             view.graphics.add(polylineGraphic);
                             console.log("do it");
                         }
-//                    position.forEach(function (value) {
-//                        setTimeout(function(){
-//                            var point=new Point();
-//                            var markerSymbol = new SimpleMarkerSymbol({
-//                                color: [226, 119, 40],
-//                                outline: {
-//                                    color: [255, 255, 255],
-//                                    width: 1
-//                                }
-//                            });
-//                            var pointGraphic = new Graphic();
-//                            point.longitude=value[1];
-//                            point.latitude=value[0];
-//
-//                            pointGraphic.geometry=point;
-//                            pointGraphic.symbol=markerSymbol;
-//
-//                            view.graphics.add(pointGraphic);
-//
-//                            view.goTo({
-//                                target:pointGraphic
-//                            });
-//                        },1000);
-
-
-//                    });
                     }
                     if(event.key==='d'){
                         var options = {
@@ -502,43 +599,49 @@
     </script>
 </head>
 <body>
-<nav class="navbar navbar-inverse" role="navigation">
-    <div class="container-fluid">
-        <div class="navbar-header">
-            <a class="navbar-brand" href="#">海洋GIS</a>
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#">海洋GIS</a>
+            </div>
+            <div>
+                <ul class="nav navbar-nav">
+                    <li class=""><a href="#">GIS1</a></li>
+                    <li><a href="#">GIS2</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            GIS3 <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">1</a></li>
+                            <li><a href="#">2</a></li>
+                            <li><a href="#">3</a></li>
+                            <li class="divider"></li>
+                            <li><a href="#">4</a></li>
+                            <li class="divider"></li>
+                            <li><a href="#">5</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <form class="navbar-form navbar-right" th:action="${'#'}" th:method="${'post'}">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="输入经纬度，隔开">
+                    </div>
+                    <button type="submit" class="btn btn-default">查找</button>
+                </form>
+            </div>
         </div>
-        <div>
-            <ul class="nav navbar-nav">
-                <li class=""><a href="#">GIS1</a></li>
-                <li><a href="#">GIS2</a></li>
-                <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                        GIS3 <b class="caret"></b>
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a href="#">jmeter</a></li>
-                        <li><a href="#">EJB</a></li>
-                        <li><a href="#">Jasper Report</a></li>
-                        <li class="divider"></li>
-                        <li><a href="#">分离的链接</a></li>
-                        <li class="divider"></li>
-                        <li><a href="#">另一个分离的链接</a></li>
-                    </ul>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
+    </nav>
     <!--<ul class="navbar-nav">-->
-        <!--<li class="nav-item">-->
-            <!--<a class="nav-link" href="#">GIS</a>-->
-        <!--</li>-->
-        <!--<li class="nav-item">-->
-            <!--<a class="nav-link" href="#">GIS2</a>-->
-        <!--</li>-->
-        <!--<li class="nav-item">-->
-            <!--<a class="nav-link" href="#">GIS2</a>-->
-        <!--</li>-->
+    <!--<li class="nav-item">-->
+    <!--<a class="nav-link" href="#">GIS</a>-->
+    <!--</li>-->
+    <!--<li class="nav-item">-->
+    <!--<a class="nav-link" href="#">GIS2</a>-->
+    <!--</li>-->
+    <!--<li class="nav-item">-->
+    <!--<a class="nav-link" href="#">GIS2</a>-->
+    <!--</li>-->
     <!--</ul>-->
     <!--<span class="navbar-text" >-->
     <!--Navbar text-->
@@ -548,13 +651,26 @@
     <!--海岸线可见性-->
     <!--</span>-->
     <!--<span class="glyphicon glyphicon-home" aria-hidden="true">-->
-        <!--lalala-->
+    <!--lalala-->
     <!--</span>-->
     <!--<button type="button" class="btn btn-default navbar-btn">Sign in</button>-->
-
-<div id="view">
-
-</div>
-
+    <div id="view">
+        <div id="line-button" class="esri-widget esri-widget--button esri-interactive" title="画线">
+            <span class="esri-icon-polyline"></span>
+        </div>
+        <div id="area-button" class="esri-widget esri-widget--button esri-interactive" title="画面">
+            <span class="esri-icon-polygon"></span>
+        </div>
+        <div id="point-button" class="esri-widget esri-widget--button esri-interactive" title="画点">
+            <span class="esri-icon-radio-checked"></span>
+        </div>
+        <div id="circle-button" class="esri-widget esri-widget--button esri-interactive" title="画圆">
+            <span class="esri-icon-radio-unchecked"></span>
+        </div>
+        <div id="rectangle-button" class="esri-widget esri-widget--button esri-interactive" title="画矩形">
+            <span class="esri-icon-checkbox-unchecked"></span>
+        </div>
+        <div id="message" style="width:160px;font-size: 10px; color: #000000;position:absolute; left:50%; bottom:16px;z-index: 50;"></div>
+    </div>
 </body>
 </html>
