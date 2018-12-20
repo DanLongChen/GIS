@@ -1,0 +1,3 @@
+arcgis-js-api.git
+origin/patch-3.20
+5b6da4cd5c41f168d8158ce9b047405a77df567f

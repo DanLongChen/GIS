@@ -70,60 +70,151 @@
             background-color: white;
             position: absolute;
         }
+
+
+
+
+        #forkongithub a {
+            background: #000;
+            color: #fff;
+            text-decoration: none;
+            font-family: arial, sans-serif;
+            text-align: center;
+            font-weight: bold;
+            padding: 5px 40px;
+            font-size: 1rem;
+            line-height: 2rem;
+            position: relative;
+            transition: 0.5s;
+        }
+
+        #forkongithub a:hover {
+            background: #c11;
+            color: #fff;
+        }
+
+        #forkongithub a::before, #forkongithub a::after {
+            content: "";
+            width: 100%;
+            display: block;
+            position: absolute;
+            top: 1px;
+            left: 0;
+            height: 1px;
+            background: #fff;
+        }
+
+        #forkongithub a::after {
+            bottom: 1px;
+            top: auto;
+        }
+
+        @media screen and (min-width: 800px) {
+            #forkongithub {
+                position: fixed;
+                display: block;
+                top: 0;
+                right: 0;
+                width: 200px;
+                overflow: hidden;
+                height: 200px;
+                z-index: 9999;
+            }
+
+            #forkongithub a {
+                width: 200px;
+                position: absolute;
+                top: 60px;
+                right: -60px;
+                transform: rotate(45deg);
+                -webkit-transform: rotate(45deg);
+                -ms-transform: rotate(45deg);
+                -moz-transform: rotate(45deg);
+                -o-transform: rotate(45deg);
+                box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.8);
+            }
+        }
     </style>
 
 
-
-
+    <script>
+        var dojoConfig = {
+            paths: {
+                plugins: "/plugins"
+            }
+        };
+    </script>
     <script th:src="@{/webjars/jquery/1.11.1/jquery.js}"></script>
     <script src="/webjars/bootstrap/4.0.0/js/bootstrap.js" th:src="@{/webjars/bootstrap/3.3.7/js/bootstrap.js}"></script>
-    <script src="https://js.arcgis.com/4.10/"></script>
+    <script src="http://localhost:8081/js/library/4.10/init.js"></script>
+    <!--<script src="http://localhost/arcgis_js_v410_api/arcgis_js_api/library/4.10/dojo/dojo.js"></script>-->
+    <!--<script src="https://js.arcgis.com/4.10/"></script>-->
+    <script src="/js/windy.js"></script>
 
-    <link rel="stylesheet" href="https://js.arcgis.com/4.10/esri/css/main.css">
+    <link rel="stylesheet" href="http://localhost:8081/js/library/4.10/esri/css/main.css">
+    <!--<link rel="stylesheet" href="/js/library/4.10/dijit/themes/claro/claro.css">-->
+    <!--<link rel="stylesheet" href="https://js.arcgis.com/4.10/esri/css/main.css">-->
     <link rel="stylesheet" href="/webjars/bootstrap/4.0.0/css/bootstrap.css" th:href="@{/webjars/bootstrap/3.3.7/css/bootstrap.css}">
 
-    <script>
+    <script type="text/javascript"  th:inline="none">
         require([
             "esri/Map",
             "esri/views/SceneView",
             "esri/views/MapView",
             "esri/WebScene",
-            "esri/WebMap",
-            // "esri/dijit/OverviewMap",
 
+
+            "esri/WebMap",
             "esri/layers/SceneLayer",
             "esri/layers/FeatureLayer",
             "esri/layers/MapImageLayer",//可以加载动态图层
+
             "esri/layers/TileLayer",//平铺图层
-
             "esri/tasks/support/Query",//查询图层
-            "esri/tasks/QueryTask",
 
+            "esri/tasks/QueryTask",
             "esri/Graphic",//画点
             "esri/geometry/Point",
-            "esri/symbols/SimpleMarkerSymbol",
 
+            "esri/symbols/SimpleMarkerSymbol",
             "esri/geometry/Polyline",//画线
+
             "esri/symbols/SimpleLineSymbol",
 
             "esri/tasks/Locator",
-
             "esri/widgets/BasemapToggle",//小组件
             "esri/widgets/CoordinateConversion",
             "esri/widgets/Expand",
             "esri/widgets/BasemapGallery",
             "esri/widgets/Search",
+
+
             "esri/widgets/LayerList",
+            // "dojo/dom",
+            "esri/core/watchUtils",//鹰眼
 
-
-            "esri/core/watchUtils",
-            "dojo/dom",
             "dojo/promise/all",
+
+            // "plugins/RasterLayer",//风场
+            "esri/request",
+            "dojo/parser",
+            "dojo/number",
+            "dojo/json",
+            "dojo/dom",
+            "esri/layers/ImageryLayer",
+            "plugins/RasterLayerForGIS",
+            "esri/layers/WebTileLayer",
+            "esri/config",
+            "dijit/registry",
+            "esri/layers/BaseTileLayer",
+
+
             "dojo/domReady!"
-        ],function(Map,SceneView,WebScene,WebMap,MapView,SceneLayer,FeatureLayer,MapImageLayer,TileLayer,
-                   Query,QueryTask,Graphic,Point,SimpleMarkerSymbol,Polyline,SimpleLineSymbol,Locator,
-                   BasemapToggle,CoordinateConversion,Expand,BasemapGallery,Search,LayerList,
-                   watchUtils,dom,all){
+        ],function(Map,SceneView,MapView,WebScene,WebMap,SceneLayer,
+                   FeatureLayer,MapImageLayer,TileLayer,Query,QueryTask,
+                   Graphic,Point,SimpleMarkerSymbol,Polyline,SimpleLineSymbol,Locator,
+                   BasemapToggle,CoordinateConversion,Expand,BasemapGallery,Search,
+                   LayerList,watchUtils,all,esriRequest,parser, number, JSON, dom,ImageryLayer,RasterLayerForGIS,WebTileLayer,config,registry,BaseTileLayer){
             //进行图层的查询
 //            var query=new Query({
 //                where:" X likes '%3%'",
@@ -233,7 +324,8 @@
                 scale:5000,//设置比例尺
                 container:"view",
 //                center:[121.9869518280,31.5195079847],//上海
-                center:[-80.046,26.733],//美洲
+//                 center:[-80.046,26.733],//美洲
+                center:[121.08,31.52],
                 zoom:12,//放大级别
                 elevationInfo: {//海拔信息
                     mode: "absolute-height",
@@ -243,7 +335,7 @@
                     right:0//整个地图会移动
                 },
                 camera: {
-                    position: [-80.046,26.733, 70],//经纬度，高度(以m为单位的海拔)
+                    position: [121.08,31.52,1000],//经纬度，高度(以m为单位的海拔)
                     tilt: 70,//倾斜角度
                     heading: 304
                 },
@@ -289,11 +381,13 @@
             var extentDiv = document.getElementById("extentDiv");
             mapView.when(function() {
                 // Update the overview extent whenever the MapView or SceneView extent changes
-                view.watch("extent", updateOverviewExtent);
-                view.watch("extent", updateOverviewExtent);
+                // view.watch(["extent"], updateOverviewExtent);
+                // mapView.watch("extent", updateOverviewExtent);
 
                 // Update the minimap overview when the main view becomes stationary
-                watchUtils.when(view, ["stationary","extent"], updateOverview);
+                watchUtils.when(view, ["stationary"], updateOverview);
+                watchUtils.when(view, ["extent"], updateOverviewExtent);
+                watchUtils.when(mapView, ["extent"], updateOverviewExtent);
 
                 function updateOverview() {
                     // Animate the MapView to a zoomed-out scale so we get a nice overview.
@@ -301,7 +395,7 @@
                     // the overview extent while animating
                     mapView.goTo({
                         center: view.center,
-                        scale: view.scale * 2 * Math.max(view.width /mapView.width, view.height/mapView.height)
+                        scale: view.scale * 2 * Math.max(view.width/mapView.width, view.height/mapView.height)
                     });
                 }
 
@@ -333,18 +427,7 @@
                 view:view,//当前视图
                 nextBaseMap:tileLayer//切换的下一个地图
             });
-            // var overViewMap=new OverviewMap({
-            //     map: map, // 必要的
-            //     visible: true,    // 初始化可见，默认为false
-            //     attachTo: "bottom-right", // 默认右上角
-            //     width: 310,   // 默认值是地图高度的 1/4th
-            //     height: 150, // 默认值是地图高度的 1/4th
-            //     opacity: 0.4,  // 透明度 默认0.5
-            //     maximizeButton: true, // 最大化,最小化按钮，默认false
-            //     expandFactor: 0.4,    //概览地图和总览图上显示的程度矩形的大小之间的比例。默认值是2，这意味着概览地图将至少是两倍的大小的程度矩形。
-            //     color: "red"  // 默认
-            // });
-            // overViewMap.startup();
+
             var ccWidget = new CoordinateConversion({
                 view: view
             });
@@ -382,6 +465,72 @@
             view.ui.add(toggle,"top-left");//当前视图，下一个视图
             // view.ui.add("line-button","top-middle");
 
+            //############################风流场实现###########################
+            var rasterLayer;
+            var canvasSupport;
+            var windy;
+            parser.parse();
+            // does the browser support canvas?
+            canvasSupport = supports_canvas();
+            map.on("load", mapLoaded());
+
+            function mapLoaded() {
+                console.log("mapLoad");
+                if ( canvasSupport ) {
+                    // Add raster layer
+                    console.log("canvas");
+                    rasterLayer = new RasterLayerForGIS(null,{
+                        opacity: 0.55
+                    });
+                    map.add(rasterLayer);
+
+                    map.on("extent-change", redraw);
+                    map.on("resize", function(){});
+                    map.on("zoom-start", redraw);
+                    map.on("pan-start", redraw);
+
+                    var layersRequest = esriRequest({
+                        url: '/json/gfs.json',
+                        content: {},
+                        handleAs: "json"
+                    });
+                    layersRequest.then(
+                        function(response) {
+                            windy = new Windy({ canvas: rasterLayer._element, data: response });
+                            redraw();
+                        }, function(error) {
+                            console.log("Error: ", error.message);
+                        });
+
+                } else {
+                    document.getElementById("mapCanvas").innerHTML = "This browser doesn't support canvas. Visit <a target='_blank' href='http://www.caniuse.com/#search=canvas'>caniuse.com</a> for supported browsers";
+                }
+            }
+
+            // does the browser support canvas?
+            function supports_canvas() {
+                return !!document.createElement("canvas").getContext;
+            }
+
+            function redraw(){
+                console.log("lalal");
+                rasterLayer._element.width = map.width;
+                rasterLayer._element.height = map.height;
+
+                windy.stop();
+
+                var extent = map.extent;
+                setTimeout(function(){
+                    windy.start(
+                        [[0,0],[map.width, map.height]],
+                        map.width,
+                        map.height,
+                        [[extent.xmin, extent.ymin],[extent.xmax, extent.ymax]]
+                    );
+                },500);
+            }
+
+
 
 
             /***
@@ -393,18 +542,18 @@
 
 
 
-            map.add(featureLayer);
-            map.add(tileLayer1);
-            map.add(tileLayer);
-            map.add(mapImageLayer);
-
-            map.add(featureLayerOcean);
-            map.add(featureLayerOcean1);
-            map.add(featureLayerOcean2);
-            map.add(featureLayerOcean3);
-            map.add(featureLayerOcean4);
-            map.add(featureLayerOcean5);
-            map.add(sceneLayer);
+            // map.add(featureLayer);
+            // map.add(tileLayer1);
+            // map.add(tileLayer);
+            // map.add(mapImageLayer);
+            //
+            // map.add(featureLayerOcean);
+            // map.add(featureLayerOcean1);
+            // map.add(featureLayerOcean2);
+            // map.add(featureLayerOcean3);
+            // map.add(featureLayerOcean4);
+            // map.add(featureLayerOcean5);
+            // map.add(sceneLayer);
 
             /***
              * 数据和事件定义
@@ -490,7 +639,6 @@
                         return popupView.container;
                     }
                 });
-
             });
 
 
@@ -745,6 +893,7 @@
             <span class="esri-icon-checkbox-unchecked"></span>
         </div>
         <div id="message" style="width:160px;font-size: 10px; color: #000000;position:absolute; left:50%; bottom:16px;z-index: 50;"></div>
+        <div id="mapCanvas"></div>
     </div>
     <div id="overviewDiv">
         <div id="extentDiv"></div>

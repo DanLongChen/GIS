@@ -45,4 +45,8 @@ public class testController {
     public String ck(){
         return "ck";
     }
+    @GetMapping("windy")
+    public String windy(){
+        return "windy";
+    }
 }
