@@ -2,11 +2,11 @@ define([
   "dojo/_base/declare", "dojo/_base/connect", "dojo/_base/array",
   "dojo/dom-construct", "dojo/dom-style", "dojo/number",
   "esri/lang","esri/domUtils",
-  "esri/geometry/SpatialReference", "esri/geometry/Point", "esri/layers/Layer"
+  "esri/SpatialReference", "esri/geometry/Point", "esri/layers/Layer"
 ], function(
   declare, connect, arrayUtils,
   domConstruct, domStyle, number,
-  esriLang,
+  esriLang,domUtils,
   SpatialReference, Point, Layer
 ) {
   var RL = declare([Layer], {
@@ -23,7 +23,7 @@ define([
 
       this.loaded = true;
       console.log(options);
-      this.onLoad(this);
+      this.load(this);
     },
     
     /********************
@@ -82,6 +82,7 @@ define([
     },
     
     _unsetMap: function(map, container) {
+      console.log("unsetup");
       arrayUtils.forEach(this._connects, connect.disconnect, this);
       if (this._element) {
         container.removeChild(this._element);
@@ -130,14 +131,14 @@ define([
      * Miscellaneous
      ****************/
     
-    // _visibilityChangeHandler: function(visible) {
-    //   if (visible) {
-    //     this.show(this._element);
-    //   }
-    //   else {
-    //     this.hide(this._element);
-    //   }
-    // }
+    _visibilityChangeHandler: function(visible) {
+      if (visible) {
+        this.show(this._element);
+      }
+      else {
+        this.hide(this._element);
+      }
+    }
     
   });
 

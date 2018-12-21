@@ -13,6 +13,7 @@
             height:100%;
             margin: 0;
             padding: 0px 0 0 0;
+            z-index: 100;
         }
 
         #mapCanvas {
@@ -87,7 +88,7 @@
                     map.on("pan-start", redraw);
 
                     var layersRequest = esriRequest({
-                        url: '/json/gfs.json',
+                        url: '/json/wind.json',
                         content: {},
                         handleAs: "json"
                     });
@@ -136,8 +137,8 @@
 
 <body class="">
 <div id="mapCanvas" style="height:100%;">
+
 </div>
-<div id="credit">Inspired by <a href="https://github.com/cambecc/earth">Earth</a>, data from <a href="http://nomads.ncdc.noaa.gov/data.php?name=access#hires_weather_datasets">GFS</a>, open source on <a href="https://github.com/Esri/wind-js">Github</a></div>
 </body>
 
 </html>
