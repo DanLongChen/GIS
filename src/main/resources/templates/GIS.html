@@ -217,6 +217,9 @@
             "esri/layers/BaseTileLayer",
             "esri/domUtils",
 
+            "esri/widgets/DirectLineMeasurement3D",
+            "esri/widgets/AreaMeasurement3D",
+
 
             "dojo/domReady!"
         ],function(Map,SceneView,MapView,WebScene,WebMap,SceneLayer,
@@ -224,7 +227,7 @@
                    Graphic,Point,SimpleMarkerSymbol,Polyline,SimpleLineSymbol,Locator,
                    BasemapToggle,CoordinateConversion,Expand,BasemapGallery,Search,
                    LayerList,watchUtils,all,esriRequest,parser, number, JSON, dom,ImageryLayer,RasterLayerForGIS,
-                   WebTileLayer,config,registry,BaseTileLayer,domUtils){
+                   WebTileLayer,config,registry,BaseTileLayer,domUtils,DirectLineMeasurement3D,AreaMeasurement3D){
             //进行图层的查询
 //            var query=new Query({
 //                where:" X likes '%3%'",
@@ -309,7 +312,7 @@
             var tileLayer1=new TileLayer({
                 url:"https://tiles.arcgis.com/tiles/bDAhvQYMG4WL8O5o/arcgis/rest/services/PBC_Bathy_Drape_Tiles4/MapServer/1",
                 opacity:0.6,
-                visible:false
+                visible:true
             });
             var mapImageLayer=new MapImageLayer({//可以有子层
                 url:"https://tiles.arcgis.com/tiles/bDAhvQYMG4WL8O5o/arcgis/rest/services/PBC_Bathy_Drape_Tiles4/MapServer/1"
@@ -326,8 +329,8 @@
             //地图和场景定义
             var map=new Map({
                 basemap:"oceans",
-                ground:"world-elevation"//这个是给3D图用的
-                // layers:[tileLayer]//可以直接加入tileLayer（2D图层）
+                ground:"world-elevation",//这个是给3D图用的
+                layers:[tileLayer1]//可以直接加入tileLayer（2D图层）
             });
             var view=new SceneView({
                 map:map,
@@ -335,7 +338,7 @@
                 container:"view",
 //                center:[121.9869518280,31.5195079847],//上海
 //                 center:[-80.046,26.733],//美洲
-                center:[121.08,31.52],
+                center:[111.21, 18.05],
                 zoom:12,//放大级别
                 elevationInfo: {//海拔信息
                     mode: "absolute-height",
@@ -345,7 +348,7 @@
                     right:0//整个地图会移动
                 },
                 camera: {
-                    position: [121.08,31.52,1000],//经纬度，高度(以m为单位的海拔)
+                    position: [111.21, 18.05,1000],//经纬度，高度(以m为单位的海拔)
                     tilt: 70,//倾斜角度
                     heading: 304
                 },
@@ -435,7 +438,7 @@
             map.add(tileLayer1);
             map.add(tileLayer);
             map.add(mapImageLayer);
-
+            //
             map.add(featureLayerOcean);
             map.add(featureLayerOcean1);
             map.add(featureLayerOcean2);
@@ -451,7 +454,7 @@
                 nextBaseMap:tileLayer//切换的下一个地图
             });
 
-            var ccWidget = new CoordinateConversion({
+            var ccWidget = new CoordinateConversion({//当前位置信息
                 view: view
             });
             var basemapGallery = new BasemapGallery({
@@ -470,7 +473,7 @@
                     bgExpand.collapse();
                 }
             });
-            var search = new Search({
+            var search = new Search({//搜索框
                 view: view
             });
             var layerList = new LayerList({//图层列表
@@ -480,6 +483,78 @@
                view:view,
                content:layerList
             });
+
+            //距离测量
+            var activeWidget = null;
+            var iframe=document.getElementById("iframe");
+            document.getElementById("distanceButton").addEventListener("click",
+                function () {
+                    iframe.style.display="none";
+                    setActiveWidget(null);
+                    if (!this.classList.contains('active')) {
+                        setActiveWidget('distance');
+                    } else {
+                        setActiveButton(null);
+                    }
+                });
+
+            document.getElementById("areaButton").addEventListener("click",
+                function () {
+                    iframe.style.display="none";
+                    setActiveWidget(null);
+                    if (!this.classList.contains('active')) {
+                        setActiveWidget('area');
+                    } else {
+                        setActiveButton(null);
+                    }
+                });
+
+            function setActiveWidget(type) {
+                switch (type) {
+                    case "distance":
+                        activeWidget = new DirectLineMeasurement3D({
+                            view: view
+                        });
+
+                        // skip the initial 'new measurement' button
+                        activeWidget.viewModel.newMeasurement();
+
+                        view.ui.add(activeWidget, "top-right");
+                        setActiveButton(document.getElementById('distanceButton'));
+                        break;
+                    case "area":
+                        activeWidget = new AreaMeasurement3D({
+                            view: view
+                        });
+
+                        // skip the initial 'new measurement' button
+                        activeWidget.viewModel.newMeasurement();
+
+                        view.ui.add(activeWidget, "top-right");
+                        setActiveButton(document.getElementById('areaButton'));
+                        break;
+                    case null:
+                        if (activeWidget) {
+                            iframe.style.display="";
+                            view.ui.remove(activeWidget);
+                            activeWidget.destroy();
+                            activeWidget = null;
+                        }
+                        break;
+                }
+            }
+
+            function setActiveButton(selectedButton) {
+                // focus the view to activate keyboard shortcuts for sketching
+                view.focus();
+                var elements = document.getElementsByClassName("active");
+                for (var i = 0; i < elements.length; i++) {
+                    elements[i].classList.remove("active");
+                }
+                if (selectedButton) {
+                    selectedButton.classList.add("active");
+                }
+            }
 
             view.ui.add(ccWidget, "bottom-left");//添加比例尺
             view.ui.add(search, "top-right");//搜索框
@@ -596,7 +671,23 @@
             positionOcean[9]=[-80.06,26.94];
             positionOcean[10]=[-80.04,26.77];
 
-
+            $(document).keydown(function (event) {
+                var iframe=document.getElementById("iframe");
+                if (event.keyCode==66){
+                    console.log("123");
+                    iframe.style.width=100+"%";
+                    iframe.style.height=100+"%";
+                    iframe.style.right=0;
+                    iframe.style.bottom=0;
+                }
+                if (event.keyCode==83) {
+                    console.log("123");
+                    iframe.style.width=300+"px";
+                    iframe.style.height=200+"px";
+                    iframe.style.right=40+"px";
+                    iframe.style.bottom=250+"px";
+                }
+            })
             view.when(function () {
                 view.popup.autoOpenEnabled = false;
                 console.log(view.popup);
@@ -832,7 +923,7 @@
                         iframe.style.height=100+"%";
                         iframe.style.right=0;
                         iframe.style.bottom=0;
-                    }z
+                    }
                     if (event.key==='x'){
                         console.log("123");
                         iframe.style.width=300+"px";
@@ -852,7 +943,8 @@
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
         <div class="container-fluid">
             <div class="navbar-header">
-                <a class="navbar-brand" href="#">海洋GIS</a>
+                <img th:src="@{/topbar.jpg}" style="width: 30px;height: 30px;margin-top: 10px">
+                <!--<a class="navbar-brand" href="#">海洋GIS</a>-->
             </div>
             <div>
                 <ul class="nav navbar-nav">
@@ -908,12 +1000,12 @@
         <p>Your browser does not support iframes.</p>
     </iframe>
     <div id="view">
-        <!--<div id="line-button" class="esri-widget esri-widget&#45;&#45;button esri-interactive" title="画线">-->
+        <button id="distanceButton" class=" action-button esri-widget esri-widget--button esri-interactive esri-icon-polyline" title="画线">
             <!--<span class="esri-icon-polyline"></span>-->
-        <!--</div>-->
-        <!--<div id="area-button" class="esri-widget esri-widget&#45;&#45;button esri-interactive" title="画面">-->
+        </button>
+        <button id="areaButton" class="action-button esri-widget esri-widget--button esri-interactive esri-icon-polygon" title="画面">
             <!--<span class="esri-icon-polygon"></span>-->
-        <!--</div>-->
+        </button>
         <!--<div id="point-button" class="esri-widget esri-widget&#45;&#45;button esri-interactive" title="画点">-->
             <!--<span class="esri-icon-radio-checked"></span>-->
         <!--</div>-->

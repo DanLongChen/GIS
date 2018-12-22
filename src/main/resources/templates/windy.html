@@ -68,7 +68,7 @@
             map = new Map("mapCanvas", {
                 center: [-99.076, 39.132],
                 zoom: 3,
-                basemap: "dark-gray"
+                basemap: "satellite"
             });
 
             map.on("load", mapLoaded);
@@ -88,7 +88,7 @@
                     map.on("pan-start", redraw);
 
                     var layersRequest = esriRequest({
-                        url: '/json/wind.json',
+                        url: '/json/gfs.json',
                         content: {},
                         handleAs: "json"
                     });
