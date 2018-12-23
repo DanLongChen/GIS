@@ -46,6 +46,7 @@
             position: absolute;
             width: 300px;
             height: 200px;
+            /*display: none;*/
         }
 
         /*#visible{*/
@@ -388,7 +389,8 @@
                 map: map,
                 constraints: {
                     rotationEnabled: false
-                }
+                },
+                logo:false
             });
             mapView.ui.components = [];
             var extentDiv = document.getElementById("extentDiv");
@@ -671,23 +673,38 @@
             positionOcean[9]=[-80.06,26.94];
             positionOcean[10]=[-80.04,26.77];
 
+            /**
+             风场图按钮事件
+             */
             $(document).keydown(function (event) {
                 var iframe=document.getElementById("iframe");
                 if (event.keyCode==66){
-                    console.log("123");
+                    console.log("66");
                     iframe.style.width=100+"%";
                     iframe.style.height=100+"%";
                     iframe.style.right=0;
                     iframe.style.bottom=0;
+                    iframe.style.display="";
                 }
                 if (event.keyCode==83) {
-                    console.log("123");
+                    console.log("83");
                     iframe.style.width=300+"px";
                     iframe.style.height=200+"px";
                     iframe.style.right=40+"px";
                     iframe.style.bottom=250+"px";
+                    iframe.style.display="none";
                 }
+            });
+            /***
+             *
+             * 标签点击事件
+             */
+            document.getElementById("tag1").addEventListener("click",function () {
+                view.goTo({
+                    target:[10,20]
+                });
             })
+
             view.when(function () {
                 view.popup.autoOpenEnabled = false;
                 console.log(view.popup);
@@ -952,16 +969,16 @@
                     <li><a href="#">GIS2</a></li>
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                            GIS3 <b class="caret"></b>
+                            标签 <b class="caret"></b>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="#">1</a></li>
-                            <li><a href="#">2</a></li>
-                            <li><a href="#">3</a></li>
+                            <li><a id="tag1" href="#">1</a></li>
+                            <li><a id="tag2" href="#">2</a></li>
+                            <li><a id="tag3" href="#">3</a></li>
                             <li class="divider"></li>
-                            <li><a href="#">4</a></li>
+                            <li><a id="tag4" href="#">4</a></li>
                             <li class="divider"></li>
-                            <li><a href="#">5</a></li>
+                            <li><a id="tag5" href="#">5</a></li>
                         </ul>
                     </li>
                 </ul>
