@@ -1,85 +1,142 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
-    <title>Create Map and add a dynamic layer</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>Custom TileLayer - 4.10</title>
+
+    <link rel="stylesheet" href="http://localhost:8081/js/library/4.10/esri/css/main.css">
+
     <style>
-        html, body, #map {
+        html,
+        body,
+        #viewDiv {
             padding: 0;
             margin: 0;
             height: 100%;
             width: 100%;
         }
     </style>
-    <link rel="stylesheet" href="https://js.arcgis.com/4.9/esri/css/main.css">
-    <script src="https://js.arcgis.com/4.9/"></script>
 
+    <script src="http://localhost:8081/js/library/4.10/init.js"></script>
 
     <script>
         require([
-                "esri/Map",
-                "esri/layers/FeatureLayer",
-                "esri/layers/LabelClass",
-                "dojo/_base/Color",
-                "esri/symbols/Font",
-                "esri/symbols/TextSymbol",
-                "dojo/domReady!"
-            ],
-            function(
-                Map,
-                FeatureLayer,
-                LabelClass,Color,Font,TextSymbol
-            ) {
+            "esri/Map",
+            "esri/request",
+            "esri/Color",
+            "esri/views/SceneView",
+            "esri/widgets/LayerList",
+            "esri/layers/BaseTileLayer"
+        ], function(
+            Map, esriRequest, Color,
+            SceneView, LayerList, BaseTileLayer
+        ) {
 
-                var map = new Map("map",{
-                    showLabels : true
-                });
+            // *******************************************************
+            // Custom tile layer class code
+            // Create a subclass of BaseTileLayer
+            // *******************************************************
 
-                /****************************************************************
-                 * Add feature layer - A FeatureLayer at minimum should point
-                 * to a URL to a feature service or point to a feature collection
-                 * object.
-                 ***************************************************************/
-
-                    // Carbon storage of trees in Warren Wilson College.
-                var featureLayer = new FeatureLayer("https://services9.arcgis.com/8K0xsogbMB6Bg155/arcgis/rest/services/trailheads/FeatureServer",{
-                        mode: FeatureLayer.MODE_SNAPSHOT,
-                        outFields: ["*"]
-                    });
-
-                //地名标注
-                var labelSymbol = new TextSymbol().setColor(new Color("#000000"));
-                labelSymbol.font.setSize("10pt");
-                labelSymbol.font.setFamily("新宋体");
-                var json = {
-                    "labelExpressionInfo": {"value": "{Point}"},
-                    "useCodedValues": false,
-                    "labelPlacement":"center-right"
-                };
-                var labelClass = new LabelClass(json);
-                labelClass.symbol = labelSymbol;
-                featureLayer.setLabelingInfo([ labelClass ]);
-                map.addLayer(featureLayer);
-                //添加“update-end”事件
-                map.on("update-end", function(){
-                    // update-end event will execute after the layer has been added to the map
-                    if(featureLayer.graphics.length >= 1)
-                    {
-                        // do your thing
-                        console.log(featureLayer.graphics);
-                        var point=featureLayer.graphics[0].attributes.Point;
-                        var num=featureLayer.graphics[0].attributes.NUM;
-
-                        console.log("Point:"+point+"    NUM:"+num);
+            var TintLayer = BaseTileLayer.createSubclass({
+                properties: {
+                    urlTemplate: null,
+                    tint: {
+                        value: null,
+                        type: Color
                     }
-                });
+                },
+
+                // generate the tile url for a given level, row and column
+                getTileUrl: function(level, row, col) {
+                    return this.urlTemplate.replace("{z}", level).replace("{x}",
+                        col).replace("{y}", row);
+                },
+
+                // This method fetches tiles for the specified level and size.
+                // Override this method to process the data returned from the server.
+                fetchTile: function(level, row, col) {
+
+                    // call getTileUrl() method to construct the URL to tiles
+                    // for a given level, row and col provided by the LayerView
+                    var url = this.getTileUrl(level, row, col);
+
+                    // request for tiles based on the generated url
+                    return esriRequest(url, {
+                        responseType: "image"
+                    })
+                        .then(function(response) {
+                            // when esri request resolves successfully
+                            // get the image from the response
+                            var image = response.data;
+                            var width = this.tileInfo.size[0];
+                            var height = this.tileInfo.size[0];
+
+                            // create a canvas with 2D rendering context
+                            var canvas = document.createElement("canvas");
+                            var context = canvas.getContext("2d");
+                            canvas.width = width;
+                            canvas.height = height;
+
+                            // Apply the tint color provided by
+                            // by the application to the canvas
+                            if (this.tint) {
+                                // Get a CSS color string in rgba form
+                                // representing the tint Color instance.
+                                context.fillStyle = this.tint.toCss();
+                                context.fillRect(0, 0, width, height);
+
+                                // Applies "difference" blending operation between canvas
+                                // and steman tiles. Difference blending operation subtracts
+                                // the bottom layer (canvas) from the top layer (tiles) or the
+                                // other way round to always get a positive value.
+                                context.globalCompositeOperation = "difference";
+                            }
+
+                            // Draw the blended image onto the canvas.
+                            context.drawImage(image, 0, 0, width, height);
+
+                            return canvas;
+                        }.bind(this));
+                }
             });
+
+            // *******************************************************
+            // Start of JavaScript application
+            // *******************************************************
+
+            // Create a new instance of the TintLayer and set its properties
+            var stamenTileLayer = new TintLayer({
+                urlTemplate: "https://stamen-tiles.a.ssl.fastly.net/toner/{z}/{x}/{y}.png",
+                tint: new Color("#ad4045"),
+                title: "Stamen Toner"
+            });
+
+            // add the new instance of the custom tile layer the map
+            var map = new Map({
+                layers: [stamenTileLayer]
+            });
+
+            // create a new scene view and add the map
+            var view = new SceneView({
+                container: "viewDiv",
+                map: map,
+                center: [0, 30],
+                zoom: 3
+            });
+
+            // create a layer list widget
+            var layerList = new LayerList({
+                view: view,
+            });
+            view.ui.add(layerList, "top-right");
+        });
     </script>
 </head>
 
 <body>
-<p id="map"></p>
+<div id="viewDiv"></div>
 </body>
 
 </html>

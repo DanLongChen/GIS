@@ -177,6 +177,7 @@
             "esri/layers/SceneLayer",
             "esri/layers/FeatureLayer",
             "esri/layers/MapImageLayer",//可以加载动态图层
+            "esri/layers/ElevationLayer",
 
             "esri/layers/TileLayer",//平铺图层
             "esri/tasks/support/Query",//查询图层
@@ -224,7 +225,7 @@
 
             "dojo/domReady!"
         ],function(Map,SceneView,MapView,WebScene,WebMap,SceneLayer,
-                   FeatureLayer,MapImageLayer,TileLayer,Query,QueryTask,
+                   FeatureLayer,MapImageLayer,ElevationLayer,TileLayer,Query,QueryTask,
                    Graphic,Point,SimpleMarkerSymbol,Polyline,SimpleLineSymbol,Locator,
                    BasemapToggle,CoordinateConversion,Expand,BasemapGallery,Search,
                    LayerList,watchUtils,all,esriRequest,parser, number, JSON, dom,ImageryLayer,RasterLayerForGIS,
@@ -299,7 +300,7 @@
             var featureLayerOcean5=new FeatureLayer({//其他
                 url:"https://services.arcgis.com/nGt4QxSblgDfeJn9/arcgis/rest/services/South_Florida_Data/FeatureServer/5"
             });
-
+            // 116.8 17.14
             /***
              * 海岸线图层
              * tileLayer用于创建二维图层
@@ -326,12 +327,49 @@
             });
 
 
+            var qixiangTiteLayer=new FeatureLayer({
+                url:"https://jjqtm425-zj.gist.com/arcgis/rest/services/%E6%B0%94%E8%B1%A1%E9%9B%B7%E8%BE%BE%E7%AB%99%E7%BE%8E%E5%9B%BD/MapServer/1"
+            });
+            var shuishenTiteLayer=new FeatureLayer({
+               url:"https://jjqtm425-zj.gist.com/arcgis/rest/services/%E4%BA%8C%E7%BB%B4%E5%9B%BE%E5%B1%82%EF%BC%88%E7%BE%8E%E5%9B%BD%E6%B2%BF%E5%B2%B8%E9%A3%8E%E7%9F%A2%E9%87%8F%EF%BC%89/MapServer/1"
+            });
+            var haididixingTileLayer=new TileLayer({
+                url:"https://jjqtm425-zj.gist.com/arcgis/rest/services/%E6%B5%B7%E5%BA%95%E5%9C%B0%E5%BD%A2%E7%AD%89%E9%AB%98%E7%BA%BF100ft/MapServer/1"
+            });
+            var moxigewanTileLayer=new FeatureLayer({
+               url:"https://jjqtm425-zj.gist.com/arcgis/rest/services/%E5%A2%A8%E8%A5%BF%E5%93%A5%E6%B9%BE%E6%B5%B7%E5%BA%95%E5%BC%82%E5%B8%B8/MapServer/1"
+            });
+            var haidicengjiwuTileLayer=new FeatureLayer({
+                url:"https://jjqtm425-zj.gist.com/arcgis/rest/services/%E6%B5%B7%E5%BA%95%E6%B2%89%E7%A7%AF%E7%89%A9%E5%8E%9A%E5%BA%A6/MapServer/1"
+            });
+            var dixingdongTileLayer=new FeatureLayer({
+                url:"https://jjqtm425-zj.gist.com/arcgis/rest/services/%E5%A2%A8%E8%A5%BF%E5%93%A5%E6%B9%BE%E6%B5%B7%E5%BA%95%E5%9C%B0%E5%BD%A2%EF%BC%88%E4%B8%9C%EF%BC%89/MapServer/1"
+            });
+            var dixingxiTileLayer=new FeatureLayer({
+                url:"https://jjqtm425-zj.gist.com/arcgis/rest/services/%E5%A2%A8%E8%A5%BF%E5%93%A5%E6%B9%BE%E6%B5%B7%E5%BA%95%E5%9C%B0%E5%BD%A2%EF%BC%88%E8%A5%BF%EF%BC%89/MapServer/1"
+            });
+            var shengcunshiyiquFeatureLayer=new FeatureLayer({
+                url:"https://jjqtm425-zj.gist.com/arcgis/rest/services/%E6%B7%B1%E6%B5%B7%E7%9F%B3%E7%8F%8A%E7%91%9A%E7%94%9F%E5%AD%98%E9%80%82%E5%AE%9C%E5%8C%BA%E5%88%86%E7%B1%BB/MapServer/1"
+            });
+            var shengcunshiyiquFeatureLayer1=new FeatureLayer({
+                url:"https://jjqtm425-zj.gist.com/arcgis/rest/services/%E6%B7%B1%E6%B5%B7%E8%BD%AF%E7%8F%8A%E7%91%9A%E7%94%9F%E5%AD%98%E9%80%82%E5%AE%9C%E5%8C%BA%E5%88%86%E7%B1%BB/MapServer/1"
+            });
+            var dixingDong=new MapImageLayer({
+                url:"https://jjqtm425-zj.gist.com/arcgis/rest/services/%E5%A2%A8%E8%A5%BF%E5%93%A5%E6%B9%BE%E6%B5%B7%E5%BA%95%E5%9C%B0%E5%BD%A2%EF%BC%88%E4%B8%9C%EF%BC%89/MapServer"
+            });
+            var dixingXi=new MapImageLayer({
+                url:"https://jjqtm425-zj.gist.com/arcgis/rest/services/%E5%A2%A8%E8%A5%BF%E5%93%A5%E6%B9%BE%E6%B5%B7%E5%BA%95%E5%9C%B0%E5%BD%A2%EF%BC%88%E8%A5%BF%EF%BC%89/MapServer"
+            });
+
+
+
+
 
             //地图和场景定义
             var map=new Map({
                 basemap:"oceans",
-                ground:"world-elevation",//这个是给3D图用的
-                layers:[tileLayer1]//可以直接加入tileLayer（2D图层）
+                ground:"world-elevation"//这个是给3D图用的
+                // layers:[tileLayer1]//可以直接加入tileLayer（2D图层）
             });
             var view=new SceneView({
                 map:map,
@@ -339,7 +377,8 @@
                 container:"view",
 //                center:[121.9869518280,31.5195079847],//上海
 //                 center:[-80.046,26.733],//美洲
-                center:[111.21, 18.05],
+//                 center:[111.21, 18.05],
+                center:[93.96,26.61],
                 zoom:12,//放大级别
                 elevationInfo: {//海拔信息
                     mode: "absolute-height",
@@ -349,7 +388,7 @@
                     right:0//整个地图会移动
                 },
                 camera: {
-                    position: [111.21, 18.05,1000],//经纬度，高度(以m为单位的海拔)
+                    position: [93.96,26.61,1000],//经纬度，高度(以m为单位的海拔)
                     tilt: 70,//倾斜角度
                     heading: 304
                 },
@@ -436,19 +475,29 @@
 //                ground:"world-elevation"
 //            });
 
-            map.add(featureLayer);
-            map.add(tileLayer1);
-            map.add(tileLayer);
-            map.add(mapImageLayer);
-            //
-            map.add(featureLayerOcean);
-            map.add(featureLayerOcean1);
-            map.add(featureLayerOcean2);
-            map.add(featureLayerOcean3);
-            map.add(featureLayerOcean4);
-            map.add(featureLayerOcean5);
-            map.add(sceneLayer);
-
+            // map.add(featureLayer);
+            // map.add(tileLayer1);
+            // map.add(tileLayer);
+            // map.add(mapImageLayer);
+            // //
+            // map.add(featureLayerOcean);
+            // map.add(featureLayerOcean1);
+            // map.add(featureLayerOcean2);
+            // map.add(featureLayerOcean3);
+            // map.add(featureLayerOcean4);
+            // map.add(featureLayerOcean5);
+            // map.add(sceneLayer);
+            map.add(shuishenTiteLayer);
+            map.add(qixiangTiteLayer );
+            map.add(haididixingTileLayer);
+            map.add(haidicengjiwuTileLayer);
+            map.add(moxigewanTileLayer);
+            map.add(dixingdongTileLayer);
+            map.add(dixingxiTileLayer);
+            map.add(shengcunshiyiquFeatureLayer);
+            map.add(shengcunshiyiquFeatureLayer1);
+            map.add(dixingDong);
+            map.add(dixingXi);
 
             //#######################小型插件定义#####################################################
             var toggle=new BasemapToggle({
@@ -537,7 +586,7 @@
                         break;
                     case null:
                         if (activeWidget) {
-                            iframe.style.display="";
+                            // iframe.style.display="";
                             view.ui.remove(activeWidget);
                             activeWidget.destroy();
                             activeWidget = null;
@@ -701,9 +750,14 @@
              */
             document.getElementById("tag1").addEventListener("click",function () {
                 view.goTo({
-                    target:[10,20]
+                    target:[-93.96,26.61]
                 });
-            })
+            });
+            document.getElementById("tag2").addEventListener("click",function () {
+                view.goTo({
+                    target:[116.8, 17.14]
+                });
+            });
 
             view.when(function () {
                 view.popup.autoOpenEnabled = false;
@@ -965,15 +1019,15 @@
             </div>
             <div>
                 <ul class="nav navbar-nav">
-                    <li class=""><a href="/windy.html" th:href="@{/windy}">GIS1</a></li>
-                    <li><a href="#">GIS2</a></li>
+                    <li class=""><a href="#" th:href="@{/windy}">海洋GIS</a></li>
+                    <!--<li><a href="#">GIS2</a></li>-->
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">
                             标签 <b class="caret"></b>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a id="tag1" href="#">1</a></li>
-                            <li><a id="tag2" href="#">2</a></li>
+                            <li><a id="tag1" href="#">墨西哥湾</a></li>
+                            <li><a id="tag2" href="#">南海</a></li>
                             <li><a id="tag3" href="#">3</a></li>
                             <li class="divider"></li>
                             <li><a id="tag4" href="#">4</a></li>
