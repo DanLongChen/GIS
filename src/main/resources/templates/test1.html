@@ -11,132 +11,120 @@
     <style>
         html,
         body,
-        #viewDiv {
+        #mapCanvas {
             padding: 0;
             margin: 0;
             height: 100%;
             width: 100%;
         }
     </style>
+    <script>
+        var dojoConfig = {
+            paths: {
+                // plugins: location.pathname.replace(/\/[^/]+$/, "") + "/plugins"
+                plugins:"/plugins"
+            }
+        };
+    </script>
 
     <script src="http://localhost:8081/js/library/4.10/init.js"></script>
 
     <script>
+        var map, rasterLayer;
+        var canvasSupport;
         require([
-            "esri/Map",
-            "esri/request",
-            "esri/Color",
-            "esri/views/SceneView",
-            "esri/widgets/LayerList",
-            "esri/layers/BaseTileLayer"
+            "esri/map", "esri/layers/TileLayer",
+            "esri/domUtils", "esri/request",
+            "dojo/parser", "dojo/number", "dojo/json", "dojo/dom",
+            "dijit/registry", "plugins/RasterLayer","esri/layers/WebTileLayer",
+            "esri/config",
+            "dojo/domReady!"
         ], function(
-            Map, esriRequest, Color,
-            SceneView, LayerList, BaseTileLayer
+            Map, TileLayer,
+            domUtils, esriRequest,
+            parser, number, JSON, dom,
+            registry, RasterLayerForGIS, WebTileLayer, esriConfig
         ) {
+            parser.parse();
+            // does the browser support canvas?
+            canvasSupport = supports_canvas();
+            console.log(canvasSupport);
 
-            // *******************************************************
-            // Custom tile layer class code
-            // Create a subclass of BaseTileLayer
-            // *******************************************************
+            map = new Map("mapCanvas", {
+                center: [116.8,17.14],
+                zoom: 3,
+                basemap: "satellite",
+                logo:false
+            });
 
-            var TintLayer = BaseTileLayer.createSubclass({
-                properties: {
-                    urlTemplate: null,
-                    tint: {
-                        value: null,
-                        type: Color
-                    }
-                },
+            map.on("load", mapLoaded());
 
-                // generate the tile url for a given level, row and column
-                getTileUrl: function(level, row, col) {
-                    return this.urlTemplate.replace("{z}", level).replace("{x}",
-                        col).replace("{y}", row);
-                },
+            function mapLoaded() {
 
-                // This method fetches tiles for the specified level and size.
-                // Override this method to process the data returned from the server.
-                fetchTile: function(level, row, col) {
+                // Add raster layer
+                if ( canvasSupport ) {
+                    console.log("mapLOaded");
+                    rasterLayer = new RasterLayerForGIS(null, {
+                        opacity: 0.55
+                    });
+                    map.addLayer(rasterLayer);
 
-                    // call getTileUrl() method to construct the URL to tiles
-                    // for a given level, row and col provided by the LayerView
-                    var url = this.getTileUrl(level, row, col);
+                    map.on("extent-change", redraw);
+                    map.on("resize", function(){});
+                    map.on("zoom-start", redraw);
+                    map.on("pan-start", redraw);
 
-                    // request for tiles based on the generated url
-                    return esriRequest(url, {
-                        responseType: "image"
-                    })
-                        .then(function(response) {
-                            // when esri request resolves successfully
-                            // get the image from the response
-                            var image = response.data;
-                            var width = this.tileInfo.size[0];
-                            var height = this.tileInfo.size[0];
+                    var layersRequest = esriRequest({
+                        url: '/json/gfs.json',
+                        content: {},
+                        handleAs: "json"
+                    });
+                    layersRequest.then(
+                        function(response) {
+                            console.log(response);
+                            windy = new Windy({ canvas: rasterLayer._element, data: response });
+                            redraw();
+                        }, function(error) {
+                            console.log("Error: ", error.message);
+                        });
 
-                            // create a canvas with 2D rendering context
-                            var canvas = document.createElement("canvas");
-                            var context = canvas.getContext("2d");
-                            canvas.width = width;
-                            canvas.height = height;
-
-                            // Apply the tint color provided by
-                            // by the application to the canvas
-                            if (this.tint) {
-                                // Get a CSS color string in rgba form
-                                // representing the tint Color instance.
-                                context.fillStyle = this.tint.toCss();
-                                context.fillRect(0, 0, width, height);
-
-                                // Applies "difference" blending operation between canvas
-                                // and steman tiles. Difference blending operation subtracts
-                                // the bottom layer (canvas) from the top layer (tiles) or the
-                                // other way round to always get a positive value.
-                                context.globalCompositeOperation = "difference";
-                            }
-
-                            // Draw the blended image onto the canvas.
-                            context.drawImage(image, 0, 0, width, height);
-
-                            return canvas;
-                        }.bind(this));
+                } else {
+                    dom.byId("mapCanvas").innerHTML = "This browser doesn't support canvas. Visit <a target='_blank' href='http://www.caniuse.com/#search=canvas'>caniuse.com</a> for supported browsers";
                 }
-            });
+            }
 
-            // *******************************************************
-            // Start of JavaScript application
-            // *******************************************************
+            // does the browser support canvas?
+            function supports_canvas() {
+                return !!document.createElement("canvas").getContext;
+            }
 
-            // Create a new instance of the TintLayer and set its properties
-            var stamenTileLayer = new TintLayer({
-                urlTemplate: "https://stamen-tiles.a.ssl.fastly.net/toner/{z}/{x}/{y}.png",
-                tint: new Color("#ad4045"),
-                title: "Stamen Toner"
-            });
+            function redraw(){
 
-            // add the new instance of the custom tile layer the map
-            var map = new Map({
-                layers: [stamenTileLayer]
-            });
+                rasterLayer._element.width = map.width;
+                rasterLayer._element.height = map.height;
 
-            // create a new scene view and add the map
-            var view = new SceneView({
-                container: "viewDiv",
-                map: map,
-                center: [0, 30],
-                zoom: 3
-            });
+                windy.stop();
 
-            // create a layer list widget
-            var layerList = new LayerList({
-                view: view,
-            });
-            view.ui.add(layerList, "top-right");
+                var extent = map.geographicExtent;
+                setTimeout(function(){
+                    windy.start(
+                        [
+                            [0,0],[map.width, map.height]
+                        ],
+                        map.width,
+                        map.height,
+                        [
+                            [extent.xmin, extent.ymin],[extent.xmax, extent.ymax]
+                        ]
+                    );
+                },500);
+            }
         });
     </script>
 </head>
 
 <body>
-<div id="viewDiv"></div>
+<div id="mapCanvas"></div>
 </body>
 
 </html>

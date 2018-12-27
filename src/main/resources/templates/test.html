@@ -6,7 +6,7 @@
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
     <title>Custom TileLayer - 4.10</title>
 
-    <link rel="stylesheet" href="https://js.arcgis.com/4.10/esri/css/main.css">
+    <link rel="stylesheet" href="http://localhost:8081/js/library/4.10/esri/css/main.css">
 
     <style>
         html,
@@ -17,55 +17,64 @@
             height: 100%;
             width: 100%;
         }
+        #canvas{
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            z-index: 10;
+        }
     </style>
 
-    <script src="https://js.arcgis.com/4.10/"></script>
+    <script src="http://localhost:8081/js/library/4.10/init.js"></script>
     <script src="/js/windy.js"></script>
     <script>
-        require([
-            "esri/Map",
-            "esri/request",
-            "esri/Color",
-            "esri/views/SceneView",
-            "esri/widgets/LayerList",
-            "esri/layers/BaseTileLayer",
-
-            "dojo/parser",
-            "dojo/number",
-            "dojo/json",
-            "dojo/dom",
-            "dijit/registry",
-            "esri/config",
-            "dijit/registry",
-            "dojo/domReady!"
-        ], function(
-            Map, esriRequest, Color,
-            SceneView, LayerList, BaseTileLayer,parser, number, JSON, dom,ImageryLayer,config,registry
-        ) {
-
-            var layersRequest = esriRequest({
-                url: '/json/gfs.json',
-                content: {},
-                handleAs: "json"
-            });
-            layersRequest.then(
-                function(response) {
-                    var canvas = document.createElement("canvas");
-                    var context = canvas.getContext("2d");
-                    canvas.width = 100;
-                    canvas.height = 100;
-                    var windy = new Windy({ canvas: canvas, data: response });
-                    // redraw();
-                    console.log(canvas);
-                }, function(error) {
-                    console.log("Error: ", error.message);
+        require(["esri/Map",
+                "esri/views/SceneView",
+                "esri/views/3d/externalRenderers",
+                "esri/request"
+            ],
+            function(Map, SceneView, externalRenderers,esriRequest) {
+            var windy=null;
+                var myExternalRenderer={
+                    vbo: null,
+                    setup: function(context) {
+                        console.log(context.view.extent);
+                        console.log(context.gl.canvas);
+                        var layersRequest = esriRequest('/json/wind.json',{
+                            content: {},
+                            handleAs: "json"
+                        });
+                        layersRequest.then(
+                            function(response) {
+                                console.log(context.gl.canvas.extent);
+                                windy=new Windy({ canvas: context.gl.canvas, data: response });
+                                redraw();
+                                console.log(windy);
+                            }, function(error) {
+                                console.log("Error: ", error.message);
+                            });
+                    },
+                    render: function(context) {
+                        console.log(context.view.extent.xmax);
+                    }
+                };
+                var view = new SceneView({
+                    map: new Map({
+                        basemap: "hybrid",
+                        ground: "world-elevation"
+                    }),
+                    container: "viewDiv"
                 });
-        });
+
+                externalRenderers.add(view, myExternalRenderer);
+            }
+        );
     </script>
 </head>
 
 <body>
 <div id="viewDiv"></div>
+<canvas id="canvas"></canvas>
 </body>
 
 </html>

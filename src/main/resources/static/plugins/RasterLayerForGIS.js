@@ -2,7 +2,7 @@ define([
   "dojo/_base/declare", "dojo/_base/connect", "dojo/_base/array",
   "dojo/dom-construct", "dojo/dom-style", "dojo/number",
   "esri/lang","esri/domUtils",
-  "esri/SpatialReference", "esri/geometry/Point", "esri/layers/Layer"
+  "esri/SpatialReference", "esri/geometry/Point", "esri/layer"
 ], function(
   declare, connect, arrayUtils,
   domConstruct, domStyle, number,
@@ -22,8 +22,7 @@ define([
       this.data = data;
 
       this.loaded = true;
-      console.log(options);
-      this.load(this);
+      this.onLoad(this);
     },
     
     /********************

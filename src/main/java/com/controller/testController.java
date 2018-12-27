@@ -49,4 +49,8 @@ public class testController {
     public String windy(){
         return "windy";
     }
+    @GetMapping("water")
+    public String water(){
+        return "water";
+    }
 }
