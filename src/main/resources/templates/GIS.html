@@ -46,7 +46,7 @@
             position: absolute;
             width: 300px;
             height: 200px;
-            /*display: none;*/
+            display: none;
         }
 
         /*#visible{*/
@@ -192,6 +192,7 @@
             "esri/symbols/SimpleLineSymbol",
 
             "esri/tasks/Locator",
+            "esri/widgets/ScaleBar",
             "esri/widgets/BasemapToggle",//小组件
             "esri/widgets/CoordinateConversion",
             "esri/widgets/Expand",
@@ -212,7 +213,7 @@
             "dojo/json",
             "dojo/dom",
             "esri/layers/ImageryLayer",
-            "plugins/RasterLayerForGIS",
+            // "plugins/RasterLayerForGIS",
             "esri/layers/WebTileLayer",
             "esri/config",
             "dijit/registry",
@@ -226,9 +227,9 @@
             "dojo/domReady!"
         ],function(Map,SceneView,MapView,WebScene,WebMap,SceneLayer,
                    FeatureLayer,MapImageLayer,ElevationLayer,TileLayer,Query,QueryTask,
-                   Graphic,Point,SimpleMarkerSymbol,Polyline,SimpleLineSymbol,Locator,
+                   Graphic,Point,SimpleMarkerSymbol,Polyline,SimpleLineSymbol,ScaleBar,Locator,
                    BasemapToggle,CoordinateConversion,Expand,BasemapGallery,Search,
-                   LayerList,watchUtils,all,esriRequest,parser, number, JSON, dom,ImageryLayer,RasterLayerForGIS,
+                   LayerList,watchUtils,all,esriRequest,parser, number, JSON, dom,ImageryLayer,
                    WebTileLayer,config,registry,BaseTileLayer,domUtils,DirectLineMeasurement3D,AreaMeasurement3D){
             //进行图层的查询
 //            var query=new Query({
@@ -475,7 +476,8 @@
             });
             mapView.ui.components = [];
             var extentDiv = document.getElementById("extentDiv");
-            mapView.when(function() {///鹰眼图
+            // 鹰眼图
+            mapView.when(function() {
                 // Update the overview extent whenever the MapView or SceneView extent changes
                 view.watch("extent", updateOverviewExtent);
                 mapView.watch("extent", updateOverviewExtent);
@@ -648,12 +650,16 @@
                     selectedButton.classList.add("active");
                 }
             }
+            var scaleBar = new ScaleBar({
+                view: view,
+                unit: "dual" // The scale bar displays both metric and non-metric units.
+            });
 
-            view.ui.add(ccWidget, "bottom-left");//添加比例尺
             view.ui.add(search, "top-right");//搜索框
             view.ui.add(bgExpand, "top-left");
             view.ui.add(layerExpand, "top-left");
             view.ui.add(toggle,"top-left");//当前视图，下一个视图
+            view.ui.add(ccWidget, "bottom-left");//位置信息
             // view.ui.add("line-button","top-middle");
 
             //############################风流场实现###########################
@@ -735,6 +741,24 @@
 
 
 
+            var movePoint={
+                type:"point",
+                longitude: 116.8,
+                latitude: 17.14
+            };
+            var markerSymbol = {
+                type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                color: [226, 119, 40],
+                outline: { // autocasts as new SimpleLineSymbol()
+                    color: [255, 255, 255],
+                    width: 2
+                }
+            };
+            var pointGraphic = new Graphic({
+                geometry: movePoint,
+                symbol: markerSymbol
+            });
+            view.graphics.add(pointGraphic);
             /***
              * 数据和事件定义
              */

@@ -17,11 +17,11 @@ var Windy = function( params ){
     var INTENSITY_SCALE_STEP = 10;            // step size of particle intensity color scale
     var MAX_WIND_INTENSITY = 40;              // 40 wind velocity at which particle intensity is maximum (m/s)
     //用于控制离子的生命
-    var MAX_PARTICLE_AGE = 100;                // 100  max number of frames a particle is drawn before regeneration
+    var MAX_PARTICLE_AGE = 10;                // 100  max number of frames a particle is drawn before regeneration
     //用于控制离子的宽度
-    var PARTICLE_LINE_WIDTH = 6.3;              // line width of a drawn particle
+    var PARTICLE_LINE_WIDTH = 1.3;              // line width of a drawn particle
     //用于控制粒子的密度，PARTICLE_MULTIPLIER值越大则粒子密度越大
-    var PARTICLE_MULTIPLIER = 0.001;              // 1/30 particle count scalar (completely arbitrary--this values looks nice)
+    var PARTICLE_MULTIPLIER = 0.0006;              // 1/30 particle count scalar (completely arbitrary--this values looks nice)
     //用于移动端减少粒子因子
     var PARTICLE_REDUCTION = 0.75;            // reduce particle count to this much of normal for mobile devices
     //用于控制地图放大缩小粒子个数
@@ -88,9 +88,9 @@ var Windy = function( params ){
       // http://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_table3-4.shtml
       var grid = [], p = 0;
       var isContinuous = Math.floor(ni * Δλ) >= 360;
-      for (var j = 0; j < nj; j++) {
+      for (var j = 0; j < nj; j+=1) {
           var row = [];
-          for (var i = 0; i < ni; i++, p++) {
+          for (var i = 0; i < ni; i+=1, p++) {
               row[i] = builder.data(p);
           }
           if (isContinuous) {

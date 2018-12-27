@@ -53,4 +53,8 @@ public class testController {
     public String water(){
         return "water";
     }
+    @GetMapping("tree")
+    public String tree(){
+        return "tree";
+    }
 }
